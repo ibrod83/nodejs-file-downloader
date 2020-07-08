@@ -27,8 +27,8 @@
   "devDependencies": {
     "@types/jest": "^25.2.2",
     "axios-mock-adapter": "^1.18.1",
-    "expect": "^26.0.1",   
-    "mocha": "^7.1.2",    
+    "expect": "^26.0.1",
+    "mocha": "^7.1.2",
     "rimraf": "^3.0.2"
   },
   "homepage": "https://ibrod83.github.io/nodejs-file-downloader/",

@@ -12,6 +12,13 @@ const Downloader = require('./Downloader');
 
 describe('Downloader tests', () => {
 
+    // beforeEach((done) => {
+    //     rimraf.sync("./downloads");
+    //     // console.log('done')
+    //     // deleteFolderRecursive('./downloads')
+    //     done();
+    // })
+
     before((done) => {
         rimraf.sync("./downloads");
         // console.log('done')
@@ -46,8 +53,8 @@ describe('Downloader tests', () => {
 
   
 
-    it('Should download a picture', async () => {
-        mock.onGet("/Desert.jpg").reply(
+    it('Should download a picture and use content-type', async () => {
+        mock.onGet("/contentType").reply(
             200,
             fs.createReadStream(Path.join(__dirname, 'fixtures/Desert.jpg')),
             {
@@ -57,7 +64,7 @@ describe('Downloader tests', () => {
 
         )
         const downloader = new Downloader({
-            url: '/Desert.jpg',
+            url: '/contentType',
             directory: "./downloads",
             cloneFiles: false,
             // fileName:'yoyo2.jpg'
@@ -77,7 +84,7 @@ describe('Downloader tests', () => {
         // debugger;
         await downloader.download();
 
-        await verifyFile('./downloads/Desert.jpg', 845941);
+        await verifyFile('./downloads/contentType.jpeg', 845941);
         //  console.log(verify)
 
         console.log('Download complete')
@@ -147,14 +154,14 @@ describe('Downloader tests', () => {
         )
         const downloader = new Downloader({
             url: '/Desert.jpg',
-            directory: "./downloads",
+            directory: "./downloads/May/2020",
             // cloneFiles: true
         })
         //   console.log(downloader)
         // debugger;
         await downloader.download();
 
-        await verifyFile('./downloads/Desert2.jpg', 845941);
+        await verifyFile('./downloads/May/2020/Desert2.jpg', 845941);
         //  console.log(verify)
 
         console.log('Download complete')
@@ -210,49 +217,102 @@ describe('Downloader tests', () => {
         console.log('Download complete')
     })
 
+    it('Should download a picture and get the name from content-disposition ', async () => {
+        // rimraf.sync('./')
+        mock.onGet("/contentDisposition").reply(
+            200,
+            fs.createReadStream(Path.join(__dirname, 'fixtures/Hydrangeas.jpg')),
+            {
+                'Content-Disposition':'Content-Disposition: attachment; filename="contentDispositionFile.jpg"'
+                // 'Content-Type': 'image/jpeg',
+                // 'Content-Length': '845941'
+            }
+
+        )
+        const downloader = new Downloader({
+            url: '/contentDisposition',
+            directory: "./downloads"            
+        })
+        // .on('progress',(p)=>{})
+        //   console.log(downloader)
+        // debugger;
+        await downloader.download();
+
+        await verifyFile('./downloads/contentDispositionFile.jpg');
+        //  console.log(verify)
+
+        console.log('Download complete')
+    })
+
+
+    it('Should download a picture with a querystring after the extension ', async () => {
+        
+        mock.onGet("/Hydrangeas.jpg?width=400&height=300").reply(
+            200,
+            fs.createReadStream(Path.join(__dirname, 'fixtures/Hydrangeas.jpg')),
+            {
+                'Content-Type': 'image/jpeg',
+                // 'Content-Length': '845941'
+            }
+
+        )
+        const downloader = new Downloader({
+            url: '/Hydrangeas.jpg?width=400&height=300',
+            directory: "./downloads"            
+        }).on('progress',(p)=>{})
+        //   console.log(downloader)
+        // debugger;
+        await downloader.download();
+
+        await verifyFile('./downloads/Hydrangeas.jpg');
+        //  console.log(verify)
+
+        console.log('Download complete')
+    })
+
     
 
-    // it('Should download two pictures, with name appending', async () => {
-    //     try {
-    //         mock.onGet("/Koala.jpg").reply(
-    //             200,
-    //             fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg')),
-    //             {
-    //                 'Content-Type': 'image/jpeg',
-    //                 'Content-Length': '780831'
-    //             }
+    it('Should download two pictures, with name appending', async () => {
+        try {
+            mock.onGet("/Koala.jpg").reply(
+                200,
+                fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg')),
+                {
+                    'Content-Type': 'image/jpeg',
+                    'Content-Length': '780831'
+                }
 
-    //         )
-    //         const downloader = new Downloader({
-    //             url: '/Koala.jpg',
-    //             directory: "./downloads",
-    //             cloneFiles: false
-    //         })
-    //         //   console.log(downloader)
-    //         // debugger;
-    //         await downloader.download();
+            )
+            const downloader = new Downloader({
+                url: '/Koala.jpg',
+                directory: "./downloads",
+                cloneFiles: false
+            })
+            //   console.log(downloader)
+            // debugger;
+            await downloader.download();
 
-    //         await verifyFile('./downloads/Koala.jpg', 780831);
+            await verifyFile('./downloads/Koala.jpg', 780831);
 
-    //         const downloader2 = new Downloader({
-    //             url: '/Koala.jpg',
-    //             directory: "./downloads",
-    //         })
-    //         //   console.log(downloader)
-    //         // debugger;
-    //         await downloader2.download();
+            const downloader2 = new Downloader({
+                url: '/Koala.jpg',
+                directory: "./downloads",
+            })
+            //   console.log(downloader)
+            // debugger;
+            await downloader2.download();
 
 
-    //         // await verifyFile('./downloads/Koala2.jpg', 780831);
-    //         //  console.log(verify)
+            // await verifyFile('./downloads/Koala2.jpg', 780831);
+            //  console.log(verify)
 
-    //         console.log('Download complete')
-    //     } catch (error) {
-    //         console.log(error)
-    //         throw error
-    //     }
+            console.log('Download complete')
+        } catch (error) {
+            console.log(error)
+            throw error
+        }
 
-    // })
+    })
 
 
 

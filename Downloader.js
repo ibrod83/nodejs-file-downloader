@@ -60,7 +60,7 @@ module.exports = class Downloader extends EventEmitter {
    */
   constructor(config) {
     super();
-    if(!config || typeof config !== 'object'){
+    if (!config || typeof config !== 'object') {
       throw new Error('Must provide a valid config object')
     }
     validateConfig(config);
@@ -96,9 +96,7 @@ module.exports = class Downloader extends EventEmitter {
     }
     const contentLength = response.headers['content-length'] || response.headers['Content-Length'];
     this.fileSize = parseInt(contentLength);
-    // console.log('content-length',response.headers['content-length'])
-    // console.log('Content-Length',response.headers['Content-Length'])
-    // debugger;
+
     this.response = response;
     return response.data;
   }
@@ -121,7 +119,7 @@ module.exports = class Downloader extends EventEmitter {
         if (this.config.fileName) {
           fileName = this.config.fileName
         } else {
-          fileName = this.deduceFileName()
+          fileName = this.deduceFileName(this.config.url, this.response.headers)
         }
         // debugger;
         var fileProcessor = new FileProcessor({ fileName, path: this.config.directory })
@@ -145,11 +143,11 @@ module.exports = class Downloader extends EventEmitter {
           // writableObjectMode: true,
 
           transform(chunk, encoding, callback) {
-           
+
             that.currentDataSize += chunk.byteLength;
-            
+
             that.percentage = ((that.currentDataSize / that.fileSize) * 100).toFixed(2)
-           
+
             if (that._events.progress) {
               that.emit('progress', that.percentage, chunk);
             }
@@ -159,15 +157,8 @@ module.exports = class Downloader extends EventEmitter {
           }
         });
         const write = this.createWriteStream(`${this.config.directory}/${fileName}`)
-        // write.on('error',(error)=>{console.log('error from write',error)})
-        // console.log(write)
-        // setTimeout(()=>{
-        //   read.unpipe();
-        //    setTimeout(()=>{
-           
-        //    },5000)
-        // },5000)
-        await pipeline(read, progress,write )
+        
+        await pipeline(read, progress, write)
 
         resolve();
       } catch (error) {
@@ -176,13 +167,13 @@ module.exports = class Downloader extends EventEmitter {
     })
   }
 
-  /**
-   * Returns the file name from content-disposition if exists. Empty string otherwise.
-   * @return {string} filename
-   */
+  
   getFileNameFromContentDisposition(contentDisposition) {
-
-
+    debugger;
+    // const contentDisposition = this.response.headers['content-disposition'] || this.response.headers['Content-Disposition'];
+    if (!contentDisposition || !contentDisposition.includes('filename=')) {
+      return "";
+    }
     let filename = "";
     var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
     var matches = filenameRegex.exec(contentDisposition);
@@ -190,37 +181,81 @@ module.exports = class Downloader extends EventEmitter {
       filename = matches[1].replace(/['"]/g, '');
     }
 
-    return filename;
+    return filename ? sanitize(filename) : "";
+  }
+
+  getFileNameFromContentType(contentType) {
+
+    // var contentType = this.response.headers['content-type'] || this.response.headers['Content-Type'];
+    // console.log(contentType)
+    let extension = mime.extension(contentType)
+
+    const url = this.removeQueryString(this.config.url);
+    const fileNameWithoutExtension = this.removeExtension(path.basename(url));
+    return `${sanitize(fileNameWithoutExtension)}.${extension}`;
+  }
+ 
+
+  removeQueryString(url) {
+    return url.split(/[?#]/)[0];
+  }
+
+  removeExtension(str) {
+    debugger;
+    const arr = str.split('.');
+    if (arr.length == 1) {
+      return str;
+    }
+    return arr.slice(0, -1).join('.')
+
+
+
+  }
+
+
+  /**
+   * 
+   * @param {string} url 
+   * @return {string} fileName
+   */
+  deduceFileNameFromUrl(url) {
+    debugger;
+    const cleanUrl = this.removeQueryString(url);
+    const baseName = sanitize(path.basename(cleanUrl));
+    return baseName;
+    
   }
 
 
   /**
    * Deduce the fileName, covering various scenarios.
-   * @return {string} sanitizedBaseName
+   * @param {string} url
+   * @param {Object} headers
+   * @return {string} fileName
    */
-  deduceFileName() {
+  deduceFileName(url, headers) {
+    
+    
+    //First option
+    const fileNameFromContentDisposition = this.getFileNameFromContentDisposition(headers['content-disposition'] || headers['Content-Disposition']);
+    console.log('filenamecontentdisposition',fileNameFromContentDisposition)
+    if (fileNameFromContentDisposition) return fileNameFromContentDisposition;   
 
-    const headers = this.response.headers;
-    const contentDisposition = headers['content-disposition'] || headers['Content-Disposition'];
-    const contentType = this.response.headers['content-type'] || headers['Content-Type'];
-    // console.log('content-type',contentType)
-    if (contentDisposition && contentDisposition.includes('filename=')) {
-      return this.getFileNameFromContentDisposition(contentDisposition);
-    }
-    // console.log('content-disposition',contentDisposition)
-    const baseName = path.basename(this.config.url);
-    const extension = path.extname(baseName);
-    const sanitizedBaseName = sanitize(baseName)
-    if (extension) {
-      return sanitizedBaseName;
+    debugger;
+    //Second option
+    if (path.extname(url)) {//First check if the url even has an extension
+      const fileNameFromUrl = this.deduceFileNameFromUrl(url);
+      if (fileNameFromUrl) return fileNameFromUrl;
     }
 
-    const extensionFromContentType = mime.extension(contentType)
-    if (extensionFromContentType) {
-      return `${sanitizedBaseName}.${extensionFromContentType}`
-    }
+    //Third option
+    const fileNameFromContentType = this.getFileNameFromContentType(headers['content-type'] || headers['Content-Type'])
+    if (fileNameFromContentType) return fileNameFromContentType
 
-    return sanitizedBaseName;
+
+    //Fallback option
+    return sanitize(url)
+   
 
   }
 }
