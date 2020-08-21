@@ -3,6 +3,7 @@ const axios = require('axios');
 const stream = require('stream');
 const { Transform } = require('stream')
 const util = require('util');
+var HttpsProxyAgent = require('https-proxy-agent');
 const { EventEmitter } = require('events')
 const path = require('path');
 const sanitize = require('sanitize-filename');
@@ -10,6 +11,7 @@ const FileProcessor = require('./FileProcessor');
 var mime = require('mime-types')
 const pipeline = util.promisify(stream.pipeline);
 const mkdir = util.promisify(fs.mkdir);
+const writeFile = util.promisify(fs.writeFile);
 
 
 
@@ -56,7 +58,11 @@ module.exports = class Downloader extends EventEmitter {
    * @param {string} config.url 
    * @param {string} [config.directory]    
    * @param {string} [config.fileName] 
-   * @param {boolean} [config.cloneFiles] 
+   * @param {boolean} [config.cloneFiles=true] 
+   * @param {number} [config.timeout=6000] 
+   * @param {object} [config.headers] 
+   * @param {string} [config.proxy] 
+   * @param {string} [config.auth] 
    */
   constructor(config) {
     super();
@@ -68,7 +74,11 @@ module.exports = class Downloader extends EventEmitter {
     const defaultConfig = {
       directory: './',
       fileName: null,
+      timeout: 6000,
+      // proxy: null,
+      // auth:null,
       cloneFiles: true,
+      shouldBufferResponse: false
     }
 
     this.config = {
@@ -81,16 +91,35 @@ module.exports = class Downloader extends EventEmitter {
     this.fileSize = null;
     this.currentDataSize = 0;
 
+    // this.config.httpsAgent = new HttpsProxyAgent(this.config.proxy)
+
   }
 
-  async createReadStream(url) {
+  /**
+   * 
+   * @param {boolean} shouldBuffer 
+   * @return {Promise<axios.AxiosResponse>}
+   */
+  async makeRequest(shouldBuffer) {
+
+    const httpsAgent = this.config.proxy ? new HttpsProxyAgent(this.config.proxy) : null; 
+    // debugger;
     const response = await axios({
       method: 'get',
       url: this.config.url,
-      responseType: 'stream'
+      timeout: this.config.timeout,
+      headers: this.config.headers,
+      httpsAgent,
+      responseType: shouldBuffer ? 'arraybuffer' : 'stream'
     })
-    // console.log(response.constructor)
-    // debugger;
+
+    return response;
+  }
+
+  async createReadStream() {
+
+    const response = await this.makeRequest(false)
+
     if (this._events.response) {
       this.emit('response', response)
     }
@@ -107,38 +136,26 @@ module.exports = class Downloader extends EventEmitter {
     return fs.createWriteStream(fullPath)
   }
 
+  async downloadAndBuffer() {
+    // debugger;
+    const response = await this.makeRequest(true);
+    this.response = response;
+    const fileName = await this.getFinalFileName();
+    // const write = this.createWriteStream(`${this.config.directory}/${fileName}`)
+    await writeFile(`${this.config.directory}/${fileName}`, response.data)
+
+  }
 
   download() {
+    if (this.config.shouldBufferResponse) return this.downloadAndBuffer()
     // debugger;
     const that = this;
 
     return new Promise(async (resolve, reject) => {
       try {
         const read = await this.createReadStream(this.config.url);
-        let fileName;
-        if (this.config.fileName) {
-          fileName = this.config.fileName
-        } else {
-          fileName = this.deduceFileName(this.config.url, this.response.headers)
-        }
-        // debugger;
-        var fileProcessor = new FileProcessor({ fileName, path: this.config.directory })
-        // debugger;
-        if (! await fileProcessor.pathExists(this.config.directory)) {
-          // debugger;
-          try {
-            await mkdir(this.config.directory, { recursive: true });
-          } catch (error) {
-            // debugger;
-          }
+        const fileName = await this.getFinalFileName();
 
-        }
-        if (this.config.cloneFiles) {
-
-
-          // debugger;
-          fileName = await fileProcessor.getAvailableFileName()
-        }
         const progress = new Transform({
           // writableObjectMode: true,
 
@@ -157,7 +174,7 @@ module.exports = class Downloader extends EventEmitter {
           }
         });
         const write = this.createWriteStream(`${this.config.directory}/${fileName}`)
-        
+
         await pipeline(read, progress, write)
 
         resolve();
@@ -167,9 +184,40 @@ module.exports = class Downloader extends EventEmitter {
     })
   }
 
-  
+  async getFinalFileName() {
+    let fileName;
+    if (this.config.fileName) {
+      fileName = this.config.fileName
+    } else {
+      fileName = this.deduceFileName(this.config.url, this.response.headers)
+    }
+    // debugger;
+    var fileProcessor = new FileProcessor({ fileName, path: this.config.directory })
+    // debugger;
+    // if (! await fileProcessor.pathExists(this.config.directory)) {
+    if (!fileProcessor.pathExists(this.config.directory)) {
+      // debugger;
+      try {
+        await mkdir(this.config.directory, { recursive: true });
+      } catch (error) {
+        // debugger;
+      }
+
+    }
+    if (this.config.cloneFiles) {
+
+
+      // debugger;
+      // fileName = await fileProcessor.getAvailableFileName()
+      fileName = fileProcessor.getAvailableFileName()
+    }
+
+    return fileName;
+  }
+
+
   getFileNameFromContentDisposition(contentDisposition) {
-    debugger;
+    // debugger;
     // const contentDisposition = this.response.headers['content-disposition'] || this.response.headers['Content-Disposition'];
     if (!contentDisposition || !contentDisposition.includes('filename=')) {
       return "";
@@ -194,14 +242,14 @@ module.exports = class Downloader extends EventEmitter {
     const fileNameWithoutExtension = this.removeExtension(path.basename(url));
     return `${sanitize(fileNameWithoutExtension)}.${extension}`;
   }
- 
+
 
   removeQueryString(url) {
     return url.split(/[?#]/)[0];
   }
 
   removeExtension(str) {
-    debugger;
+    // debugger;
     const arr = str.split('.');
     if (arr.length == 1) {
       return str;
@@ -219,11 +267,11 @@ module.exports = class Downloader extends EventEmitter {
    * @return {string} fileName
    */
   deduceFileNameFromUrl(url) {
-    debugger;
+    // debugger;
     const cleanUrl = this.removeQueryString(url);
     const baseName = sanitize(path.basename(cleanUrl));
     return baseName;
-    
+
   }
 
 
@@ -234,14 +282,14 @@ module.exports = class Downloader extends EventEmitter {
    * @return {string} fileName
    */
   deduceFileName(url, headers) {
-    
-    
+
+
     //First option
     const fileNameFromContentDisposition = this.getFileNameFromContentDisposition(headers['content-disposition'] || headers['Content-Disposition']);
-    console.log('filenamecontentdisposition',fileNameFromContentDisposition)
-    if (fileNameFromContentDisposition) return fileNameFromContentDisposition;   
+    console.log('filenamecontentdisposition', fileNameFromContentDisposition)
+    if (fileNameFromContentDisposition) return fileNameFromContentDisposition;
 
-    debugger;
+    // debugger;
     //Second option
     if (path.extname(url)) {//First check if the url even has an extension
       const fileNameFromUrl = this.deduceFileNameFromUrl(url);
@@ -255,7 +303,7 @@ module.exports = class Downloader extends EventEmitter {
 
     //Fallback option
     return sanitize(url)
-   
+
 
   }
 }
