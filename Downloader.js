@@ -286,7 +286,7 @@ module.exports = class Downloader extends EventEmitter {
 
     //First option
     const fileNameFromContentDisposition = this.getFileNameFromContentDisposition(headers['content-disposition'] || headers['Content-Disposition']);
-    console.log('filenamecontentdisposition', fileNameFromContentDisposition)
+    // console.log('filenamecontentdisposition', fileNameFromContentDisposition)
     if (fileNameFromContentDisposition) return fileNameFromContentDisposition;
 
     // debugger;
