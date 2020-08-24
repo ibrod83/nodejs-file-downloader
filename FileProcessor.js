@@ -1,100 +1,136 @@
 const path = require('path');
 const fs = require('fs');
+// const { resolve } = require('path');
 
 
 class FileProcessor {
     constructor(config) {
 
-        // console.log(config)
-        // debugger;
+   
         this.originalFileName = config.fileName;
         this.fileExtension = path.extname(this.originalFileName);
         this.fileNameWithoutExtension = config.fileName.split('.').slice(0, -1).join('.')
         this.basePath = config.path[config.path.length - 1] === '/' ? config.path : config.path + '/';
 
-        // console.log(this);
+        this.useSynchronousMode = config.useSynchronousMode || false;
+        
     }
 
-    // async getAvailableFileName() {
+ 
     getAvailableFileName() {
+        if (this.useSynchronousMode) {
+            // console.log('useSynchronousMode')
+            return this.createNewFileNameSync(this.originalFileName);
+        }
 
-        // return await this.createNewFileName(this.originalFileName);
-        return this.createNewFileName(this.originalFileName);
+        return new Promise(async (resolve) => {
+            // console.log('useSynchronousMode!!',this.useSynchronousMode)
+            try {
+                const name = await this.createNewFileName(this.originalFileName);
+                resolve(name);
+            } catch (error) {
+                reject(error);
+            }
+
+        })
+
     }
 
-    // pathExists(path) {
-    //     return new Promise((resolve, reject) => {
-    //         fs.open(path, 'r', (err, fd) => {
-    //             if (err) {
-    //                 // debugger;
-    //                 if (err.code === 'ENOENT') {
-    //                     return resolve(false)
-    //                 }
-
-    //                 reject(err)
-    //             } else {
-    //                 // debugger;
-    //                 resolve(true)
-    //             }
+    pathExistsSync(path){
+        return fs.existsSync(path);
+    }
 
 
-    //         });
-    //     })
-
-    // }
     pathExists(path) {
-        if(fs.existsSync(path)) return true;
+        // debugger;
+        if(this.useSynchronousMode){
+            // console.log('path',path)
+            return this.pathExistsSync(path);
+        }
+       
+        // console.log('useSynchronousMode',this.useSynchronousMode)
 
-        return false;
+        return new Promise((resolve, reject) => {
+            fs.open(path, 'r', (err) => {
+                // debugger;
+                if (err) {
+                    if (err.code === 'ENOENT') {
+                        // console.error('myfile does not exist');
+                        return resolve(false);
+                    }
+
+                    reject(err);
+                }
+
+                resolve(true);
+            });
+        })
+
 
     }
 
-    // async createNewFileName(fileName, counter = 1) {
-    createNewFileName(fileName, counter = 1) {
+
+    createNewFileNameSync(fileName, counter = 1) {
 
 
-        // if (! await this.fileNameExists(fileName)) {
-        if (!this.fileNameExists(fileName)) {
-            // console.log('new file name', newFileName)
+        if (!this.pathExistsSync(this.basePath +fileName)) {
             return fileName;
         }
 
         counter = counter + 1;
         let newFileName = this.fileNameWithoutExtension + counter + this.fileExtension;
 
-        // return await this.createNewFileName(newFileName, counter);
-        return this.createNewFileName(newFileName, counter);
+        return this.createNewFileNameSync(newFileName, counter);
+
+    }
+
+    async createNewFileName(fileName, counter = 1) {
+
+
+        if (! await this.pathExists(this.basePath + fileName)) {
+
+            return fileName;
+        }
+
+        counter = counter + 1;
+        let newFileName = this.fileNameWithoutExtension + counter + this.fileExtension;
+
+        return await this.createNewFileName(newFileName, counter);
 
     }
 
 
-    fileNameExists(fileName) {
-        return this.pathExists(this.basePath + fileName);
-        // debugger;
-        // return new Promise((resolve, reject) => {
-        //     fs.open(this.basePath + fileName, 'r', (err) => {
-        //         debugger;
-        //         if (err) {
-        //             if (err.code === 'ENOENT') {
-        //                 // console.error('myfile does not exist');
-        //                 return resolve(false);
-        //             }
 
-        //             reject(err);
-        //         }
+    // fileNameExistsSync(fileName) {
+    //     if (this.useSynchronousMode) {
+    //         return this.pathExists(this.basePath + fileName);
+    //     }
 
-        //         resolve(true);
-        //     });
-        // })
 
-        // if (fs.existsSync(this.basePath+fileName)) {
-        //     // console.log(`file ${fileName} already exists!`);
-        //     return true;
-        // }
-        // // console.log(`file ${fileName} is being created for the first time`);
-        // return false;
 
-    }
+    // }
+
+    // fileNameExists(fileName) {
+
+
+    //     return new Promise((resolve, reject) => {
+    //         fs.open(this.basePath + fileName, 'r', (err) => {
+    //             debugger;
+    //             if (err) {
+    //                 if (err.code === 'ENOENT') {
+    //                     // console.error('myfile does not exist');
+    //                     return resolve(false);
+    //                 }
+
+    //                 reject(err);
+    //             }
+
+    //             resolve(true);
+    //         });
+    //     })
+
+
+    // }
 }
 
 module.exports = FileProcessor;

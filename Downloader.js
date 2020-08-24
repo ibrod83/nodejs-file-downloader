@@ -63,6 +63,7 @@ module.exports = class Downloader extends EventEmitter {
    * @param {object} [config.headers] 
    * @param {string} [config.proxy] 
    * @param {string} [config.auth] 
+   * @param {boolean} [config.useSynchronousMode = false] 
    */
   constructor(config) {
     super();
@@ -75,6 +76,7 @@ module.exports = class Downloader extends EventEmitter {
       directory: './',
       fileName: null,
       timeout: 6000,
+      useSynchronousMode:false,
       // proxy: null,
       // auth:null,
       cloneFiles: true,
@@ -185,6 +187,7 @@ module.exports = class Downloader extends EventEmitter {
   }
 
   async getFinalFileName() {
+    // debugger;
     let fileName;
     if (this.config.fileName) {
       fileName = this.config.fileName
@@ -192,10 +195,10 @@ module.exports = class Downloader extends EventEmitter {
       fileName = this.deduceFileName(this.config.url, this.response.headers)
     }
     // debugger;
-    var fileProcessor = new FileProcessor({ fileName, path: this.config.directory })
+    var fileProcessor = new FileProcessor({useSynchronousMode:this.config.useSynchronousMode, fileName, path: this.config.directory })
     // debugger;
     // if (! await fileProcessor.pathExists(this.config.directory)) {
-    if (!fileProcessor.pathExists(this.config.directory)) {
+    if (!await fileProcessor.pathExists(this.config.directory)) {
       // debugger;
       try {
         await mkdir(this.config.directory, { recursive: true });
@@ -208,8 +211,8 @@ module.exports = class Downloader extends EventEmitter {
 
 
       // debugger;
-      // fileName = await fileProcessor.getAvailableFileName()
-      fileName = fileProcessor.getAvailableFileName()
+      fileName = await fileProcessor.getAvailableFileName()
+      // fileName = fileProcessor.getAvailableFileName()
     }
 
     return fileName;
