@@ -1,7 +1,7 @@
 {
   "name": "nodejs-file-downloader",
-  "version": "1.2.0",
-  "description": "A file fownloader for NodeJs",
+  "version": "1.2.1",
+  "description": "A file downloader for NodeJs",
   "main": "Downloader.js",
   "scripts": {
     "test": "mocha Downloader.test.js",
@@ -32,7 +32,7 @@
     "mocha": "^7.1.2",
     "rimraf": "^3.0.2"
   },
-  "homepage": "https://ibrod83.github.io/nodejs-file-downloader/",
+  "homepage": "https://github.com/ibrod83/nodejs-file-downloader",
   "bugs": {
     "url": "https://github.com/ibrod83/nodejs-file-downloader/issues"
   },
