@@ -59,7 +59,7 @@ describe('Downloader tests', () => {
             fs.createReadStream(Path.join(__dirname, 'fixtures/Desert.jpg')),
             {
                 'Content-Type': 'image/jpeg',
-                'Content-Length': '845941'
+                'Content-Length': '23642'
             }
 
         )
@@ -84,7 +84,7 @@ describe('Downloader tests', () => {
         // debugger;
         await downloader.download();
 
-        await verifyFile('./downloads/contentType.jpeg', 845941);
+        await verifyFile('./downloads/contentType.jpeg', 23642);
         //  console.log(verify)
 
         console.log('Download complete')
@@ -96,7 +96,7 @@ describe('Downloader tests', () => {
             fs.createReadStream(Path.join(__dirname, 'fixtures/Desert.jpg')),
             {
                 'Content-Type': 'image/jpeg',
-                'Content-Length': '845941'
+                'Content-Length': '23642'
             }
 
         )
@@ -110,7 +110,7 @@ describe('Downloader tests', () => {
         // debugger;
         await downloader.download();
 
-        await verifyFile('./downloads/alternativeName.jpg', 845941);
+        await verifyFile('./downloads/alternativeName.jpg', 23642);
         //  console.log(verify)
 
         console.log('Download complete')
@@ -122,7 +122,7 @@ describe('Downloader tests', () => {
             fs.createReadStream(Path.join(__dirname, 'fixtures/Desert.jpg')),
             {
                 'Content-Type': 'image/jpeg',
-                'Content-Length': '845941'
+                'Content-Length': '23642'
             }
 
         )
@@ -135,7 +135,7 @@ describe('Downloader tests', () => {
         // debugger;
         await downloader.download();
 
-        await verifyFile('./downloads/May/2020/Desert.jpg', 845941);
+        await verifyFile('./downloads/May/2020/Desert.jpg', 23642);
         //  console.log(verify)
 
         console.log('Download complete')
@@ -161,7 +161,7 @@ describe('Downloader tests', () => {
         // debugger;
         await downloader.download();
 
-        await verifyFile('./downloads/May/2020/Desert2.jpg', 845941);
+        await verifyFile('./downloads/May/2020/Desert2.jpg', 23642);
         //  console.log(verify)
 
         console.log('Download complete')
@@ -279,7 +279,7 @@ describe('Downloader tests', () => {
                 fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg')),
                 {
                     'Content-Type': 'image/jpeg',
-                    'Content-Length': '780831'
+                    'Content-Length': '29051'
                 }
 
             )
@@ -292,7 +292,7 @@ describe('Downloader tests', () => {
             // debugger;
             await downloader.download();
 
-            await verifyFile('./downloads/Koala.jpg', 780831);
+            await verifyFile('./downloads/Koala.jpg', 29051);
 
             const downloader2 = new Downloader({
                 url: '/Koala.jpg',

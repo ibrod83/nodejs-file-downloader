@@ -63,7 +63,7 @@ const Downloader = require('nodejs-file-downloader');
 
 #### Custom file name
 
-nodejs-file-downloader "deduces" the file name, from the URL or the response headers. If you want to overwrite it, supply a config.fileName property.
+Normally, nodejs-file-downloader "deduces" the file name, from the URL or the response headers. If you want to choose a custom file name, supply a config.fileName property.
 
 ```javascript
 
