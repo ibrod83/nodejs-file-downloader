@@ -50,19 +50,29 @@ class FileProcessor {
        
         // console.log('useSynchronousMode',this.useSynchronousMode)
 
-        return new Promise((resolve, reject) => {
-            fs.open(path, 'r', (err) => {
-                // debugger;
+        // return new Promise((resolve, reject) => {
+        //     fs.open(path, 'r', (err) => {
+        //         // debugger;
+        //         if (err) {
+        //             if (err.code === 'ENOENT') {
+        //                 // console.error('myfile does not exist');
+        //                 return resolve(false);
+        //             }
+
+        //             reject(err);
+        //         }
+
+        //         resolve(true);
+        //     });
+        // })
+
+        return new Promise((resolve,reject)=>{
+            fs.access(path, (err) => {
                 if (err) {
-                    if (err.code === 'ENOENT') {
-                        // console.error('myfile does not exist');
-                        return resolve(false);
-                    }
-
-                    reject(err);
+                    resolve(false)
+                } else {
+                    resolve(true)
                 }
-
-                resolve(true);
             });
         })
 
