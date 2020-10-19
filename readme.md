@@ -1,5 +1,7 @@
 nodejs-file-downloader is a simple utility for downloading files. It hides the complexity of dealing with streams, paths and duplicate file names.
 
+If you encounter any bugs or have a question, please don't hesitate to open an issue.
+
 ## Installation
 
 ```sh

@@ -114,10 +114,10 @@ module.exports = class Downloader extends EventEmitter {
    */
   async save(){
     if(this.config.shouldBufferResponse){
-      debugger;
+      // debugger;
       return this._saveFromBuffer(this.response.data);
     }
-    debugger;
+    // debugger;
     await this._saveFromReadableStream(this.response.data);
   }
 
@@ -147,7 +147,7 @@ module.exports = class Downloader extends EventEmitter {
       httpsAgent,
       responseType: shouldBuffer ? 'arraybuffer' : 'stream'
     })
-    debugger;
+    // debugger;
     // this.response = response;
 
     return response;
@@ -222,7 +222,7 @@ module.exports = class Downloader extends EventEmitter {
     // const response = await this._makeRequest(true);
     // this.response = response;
     const fileName = await this._getFinalFileName();
-    debugger;
+    // debugger;
     // const write = this.createWriteStream(`${this.config.directory}/${fileName}`)
     await writeFile(`${this.config.directory}/${fileName}`, buffer)
 
