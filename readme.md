@@ -110,7 +110,7 @@ There is an alternative way to using Downloader.download():
   const response = await downloader.request()//This function just performs the request. The file isn't actually being downloaded yet. It returns an Axios response object. You can refer to their docs for more details.
 
   //Now you can do something with the response, like check the headers
-  if(response.headers['content-length'] > 1000000){
+  if(response.headers['content-length'] < 1000000){
     await downloader.save()
   }else{
     console.log('File is too big!')
