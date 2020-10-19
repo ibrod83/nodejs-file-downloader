@@ -1,5 +1,7 @@
 .DS_Store
 
+yoyo.js
+
 node_modules
 
 lib/core/metadata.js

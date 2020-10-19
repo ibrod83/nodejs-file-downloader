@@ -26,7 +26,7 @@ describe('Downloader tests', () => {
         done();
     })
 
-    
+
     /**
      * 
      * @param {string} path 
@@ -46,12 +46,12 @@ describe('Downloader tests', () => {
                 }
 
             });
-           
+
         })
-       
+
     }
 
-  
+
 
     it('Should download a picture and use content-type', async () => {
         mock.onGet("/contentType").reply(
@@ -168,7 +168,7 @@ describe('Downloader tests', () => {
     })
 
     it('Should handle a file without content-length', async () => {
-        
+
         mock.onGet("/Koala.jpg").reply(
             200,
             fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg')),
@@ -180,8 +180,8 @@ describe('Downloader tests', () => {
         )
         const downloader = new Downloader({
             url: '/Koala.jpg',
-            directory: "./downloads"            
-        }).on('progress',(p)=>{})
+            directory: "./downloads"
+        }).on('progress', (p) => { })
         //   console.log(downloader)
         // debugger;
         await downloader.download();
@@ -193,7 +193,7 @@ describe('Downloader tests', () => {
     })
 
     it('Should handle a file without content-type', async () => {
-        
+
         mock.onGet("/Lighthouse.jpg").reply(
             200,
             fs.createReadStream(Path.join(__dirname, 'fixtures/Lighthouse.jpg')),
@@ -205,8 +205,8 @@ describe('Downloader tests', () => {
         )
         const downloader = new Downloader({
             url: '/Lighthouse.jpg',
-            directory: "./downloads"            
-        }).on('progress',(p)=>{})
+            directory: "./downloads"
+        }).on('progress', (p) => { })
         //   console.log(downloader)
         // debugger;
         await downloader.download();
@@ -223,7 +223,7 @@ describe('Downloader tests', () => {
             200,
             fs.createReadStream(Path.join(__dirname, 'fixtures/Hydrangeas.jpg')),
             {
-                'Content-Disposition':'Content-Disposition: attachment; filename="contentDispositionFile.jpg"'
+                'Content-Disposition': 'Content-Disposition: attachment; filename="contentDispositionFile.jpg"'
                 // 'Content-Type': 'image/jpeg',
                 // 'Content-Length': '845941'
             }
@@ -231,7 +231,7 @@ describe('Downloader tests', () => {
         )
         const downloader = new Downloader({
             url: '/contentDisposition',
-            directory: "./downloads"            
+            directory: "./downloads"
         })
         // .on('progress',(p)=>{})
         //   console.log(downloader)
@@ -246,7 +246,7 @@ describe('Downloader tests', () => {
 
 
     it('Should download a picture with a querystring after the extension ', async () => {
-        
+
         mock.onGet("/Hydrangeas.jpg?width=400&height=300").reply(
             200,
             fs.createReadStream(Path.join(__dirname, 'fixtures/Hydrangeas.jpg')),
@@ -258,8 +258,8 @@ describe('Downloader tests', () => {
         )
         const downloader = new Downloader({
             url: '/Hydrangeas.jpg?width=400&height=300',
-            directory: "./downloads"            
-        }).on('progress',(p)=>{})
+            directory: "./downloads"
+        }).on('progress', (p) => { })
         //   console.log(downloader)
         // debugger;
         await downloader.download();
@@ -270,7 +270,7 @@ describe('Downloader tests', () => {
         console.log('Download complete')
     })
 
-    
+
 
     it('Should download two pictures, with name appending', async () => {
         try {
@@ -311,6 +311,47 @@ describe('Downloader tests', () => {
             console.log(error)
             throw error
         }
+
+    })
+
+    it('Should download an image, with shouldBufferResponse', async () => {
+        const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'));
+        // const buffer=[]
+        const chunks = []
+        for await (let chunk of stream) {
+            chunks.push(chunk)
+        }
+
+        const buffer = Buffer.concat(chunks)
+
+        mock.onGet("/Koala.jpg").reply(
+            200,
+            buffer,
+            {
+                'Content-Type': 'image/jpeg',
+                'Content-Length': '29051'
+            }
+
+        )
+
+        try {
+            const downloader = new Downloader({
+                url: '/Koala.jpg',
+                directory: "./downloads",
+                cloneFiles: false,
+                shouldBufferResponse: true
+            })
+            //   console.log(downloader)
+            // debugger;
+            await downloader.download();
+
+            // await verifyFile('./downloads/Koala.jpg', 29051);
+        } catch (error) {
+            debugger;
+        }
+
+
+
 
     })
 
