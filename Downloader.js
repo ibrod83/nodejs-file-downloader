@@ -3,8 +3,6 @@ const axios = require('axios');
 const stream = require('stream');
 const { Transform } = require('stream')
 const util = require('util');
-// var HttpsProxyAgent = require('https-proxy-agent');
-const { EventEmitter } = require('events')
 const FileProcessor = require('./utils/FileProcessor');
 const pipeline = util.promisify(stream.pipeline);
 const mkdir = util.promisify(fs.mkdir);
@@ -48,7 +46,8 @@ const validateConfig = (config) => {
   }
 }
 
-module.exports = class Downloader extends EventEmitter {
+
+module.exports = class Downloader {
 
 
   /**
@@ -62,11 +61,14 @@ module.exports = class Downloader extends EventEmitter {
    * @param {number} [config.maxAttempts=1] 
    * @param {object} [config.headers = undefined] 
    * @param {object} [config.httpsAgent = undefined] 
+   * @param {function} [config.onError = undefined] 
+   * @param {function} [config.onResponse = undefined] 
+   * @param {function} [config.onProgress = undefined] 
    * @param {boolean} [config.shouldBufferResponse = false] 
    * @param {boolean} [config.useSynchronousMode = false] 
    */
   constructor(config) {
-    super();
+    // super();
     if (!config || typeof config !== 'object') {
       throw new Error('Must provide a valid config object')
     }
@@ -81,12 +83,19 @@ module.exports = class Downloader extends EventEmitter {
       httpsAgent:undefined,
       headers:undefined,
       cloneFiles: true,      
-      shouldBufferResponse: false
+      shouldBufferResponse: false,
+      onResponse:undefined,
+      onError:undefined,
+      onProgress:undefined
     }
 
     this.config = {
       ...defaultConfig,
       ...config
+    }
+
+    if(this.config.filename){
+      this.config.fileName = this.config.filename 
     }
 
     this.response = null;
@@ -98,6 +107,11 @@ module.exports = class Downloader extends EventEmitter {
 
   }
 
+  //For EventEmitter backwards compatibility
+  on(event,callback){
+    this.config[`on${capitalize(event)}`] = callback
+  }
+
   /**
    * @return {Promise<axios.AxiosResponse>}
    */
@@ -106,8 +120,8 @@ module.exports = class Downloader extends EventEmitter {
     // const response = await this._makeRequestUntilSuccessful();
     const response = await this._makeUntilSuccessful(this._makeRequest);
     this.response = response;
-    if (this._events.response) {
-      this.emit('response', response)
+    if (this.config.onResponse) {
+      await this.config.onResponse(response);
     }
     const contentLength = response.headers['content-length'] || response.headers['Content-Length'];
     this.fileSize = parseInt(contentLength);
@@ -157,10 +171,10 @@ module.exports = class Downloader extends EventEmitter {
       data = await func();
       // debugger;
     }, {
-      onError: (e) => {
+      onError: async(e) => {
         // debugger;
-        if (this._events.error) {
-          this.emit('error', e);
+        if (this.config.onError) {
+          await this.config.onError(e);
         }
       },
       maxAttempts:this.config.maxAttempts
@@ -212,8 +226,8 @@ module.exports = class Downloader extends EventEmitter {
 
         that.percentage = ((that.currentDataSize / that.fileSize) * 100).toFixed(2)
 
-        if (that._events.progress) {
-          that.emit('progress', that.percentage, chunk);
+        if (that.config.onProgress) {
+          that.config.onProgress(that.percentage, chunk);
         }
 
         // Push the data onto the readable queue.
@@ -285,3 +299,7 @@ module.exports = class Downloader extends EventEmitter {
 }
 
 
+const capitalize = (s) => {
+  if (typeof s !== 'string') return ''
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}

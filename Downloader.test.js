@@ -67,19 +67,30 @@ describe('Downloader tests', () => {
             url: '/contentType',
             directory: "./downloads",
             cloneFiles: false,
-            // fileName:'yoyo2.jpg'
-        })
-            .on('progress', (p, chunk) => {
+            onProgress:(p, chunk) => {
                 // console.log(p, chunk)
                 expect(!isNaN(parseFloat(p)) && isFinite(p)).toBe(true)
                 expect(Object.getPrototypeOf(chunk).constructor.name).toBe('Buffer')
 
-            })
-            .on('response', (r) => {
+            },
+            onResponse:(r) => {
                 // console.log(Object.getPrototypeOf(r).constructor.name)
                 expect(r).toHaveProperty('data');
                 expect(r).toHaveProperty('headers');
-            })
+            }
+            // fileName:'yoyo2.jpg'
+        })
+            // .on('progress', (p, chunk) => {
+            //     // console.log(p, chunk)
+            //     expect(!isNaN(parseFloat(p)) && isFinite(p)).toBe(true)
+            //     expect(Object.getPrototypeOf(chunk).constructor.name).toBe('Buffer')
+
+            // })
+            // .on('response', (r) => {
+            //     // console.log(Object.getPrototypeOf(r).constructor.name)
+            //     expect(r).toHaveProperty('data');
+            //     expect(r).toHaveProperty('headers');
+            // })
         //   console.log(downloader)
         // debugger;
         await downloader.download();
@@ -180,8 +191,10 @@ describe('Downloader tests', () => {
         )
         const downloader = new Downloader({
             url: '/Koala.jpg',
-            directory: "./downloads"
-        }).on('progress', (p) => { })
+            directory: "./downloads",
+            // onProgress: (p) => { }
+        })
+        // .on('progress', (p) => { })
         //   console.log(downloader)
         // debugger;
         await downloader.download();
@@ -205,8 +218,9 @@ describe('Downloader tests', () => {
         )
         const downloader = new Downloader({
             url: '/Lighthouse.jpg',
-            directory: "./downloads"
-        }).on('progress', (p) => { })
+            directory: "./downloads",
+        })
+        // .on('progress', (p) => { })
         //   console.log(downloader)
         // debugger;
         await downloader.download();
@@ -259,7 +273,8 @@ describe('Downloader tests', () => {
         const downloader = new Downloader({
             url: '/Hydrangeas.jpg?width=400&height=300',
             directory: "./downloads"
-        }).on('progress', (p) => { })
+        })
+        // .on('progress', (p) => { })
         //   console.log(downloader)
         // debugger;
         await downloader.download();
@@ -403,26 +418,33 @@ describe('Downloader tests', () => {
             return [
                 status,
                 stream,
-                {}
+                {'Content-Type': 'image/jpeg'}
             ];
         });
 
         try {
+            var onErrorCount = 0
+
             const downloader = new Downloader({
                 timeout: 1000,
                 url: '/400',
                 directory: "./downloads",
-                maxAttempts:3
+                maxAttempts:3,
+                onError:(e) => {
+                    debugger;
+                    onErrorCount++;
+                    // console.log(e.message)
+                }
 
             })
             //   console.log(downloader)
             // debugger;
-            var onErrorCount = 0
-            downloader.on('error', (e) => {
-                debugger;
-                onErrorCount++;
-                // console.log(e.message)
-            })
+            // var onErrorCount = 0
+            // downloader.on('error', (e) => {
+            //     debugger;
+            //     onErrorCount++;
+            //     // console.log(e.message)
+            // })
             // await downloader.download();
            const request =  await downloader.request()
             await downloader.save()
@@ -431,13 +453,14 @@ describe('Downloader tests', () => {
             // debugger;
             
             
-            // await verifyFile('./downloads/Koala.jpg', 29051);
+            
         } catch (error) {
             // debugger;
         }finally{
             // debugger;
             expect(s.constructor.name).toBe('ReadStream')
             expect(onErrorCount).toBe(2)
+            await verifyFile('./downloads/400.jpeg', 29051);
         }
 
 
@@ -450,22 +473,27 @@ describe('Downloader tests', () => {
 
        
         mock.onGet("/500").reply(500);
-
+        var onErrorCount = 0;
         try {
             const downloader = new Downloader({
                 timeout: 1000,
                 url: '/500',
                 directory: "./downloads",
-                maxAttempts:1
+                maxAttempts:1,
+                onError: (e) => {
+                    // debugger;
+                    onErrorCount++;
+                    // console.log(e.message)
+                }
 
             })
 
-            var onErrorCount = 0
-            downloader.on('error', (e) => {
-                // debugger;
-                onErrorCount++;
-                // console.log(e.message)
-            })
+            // var onErrorCount = 0
+            // downloader.on('error', (e) => {
+            //     // debugger;
+            //     onErrorCount++;
+            //     // console.log(e.message)
+            // })
             await downloader.download();
 
         } catch (error) {

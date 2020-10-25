@@ -1,4 +1,4 @@
-nodejs-file-downloader is a simple utility for downloading files. It hides the complexity of dealing with streams, paths and duplicate file names.
+nodejs-file-downloader is a simple utility for downloading files. It hides the complexity of dealing with streams, paths and duplicate file names. Can automatically repeat failed downloads.
 
 If you encounter any bugs or have a question, please don't hesitate to open an issue.
 
@@ -14,6 +14,7 @@ $ npm install nodejs-file-downloader
   * [Custom file name](#custom-file-name)  
   * [Overwrite existing files](#overwrite-existing-files)  
   * [Get response and then download](#get-response-and-then-download)  
+  * [Repeat failed downloads automatically](#repeat-failed-downloads-automatically)  
 
 ## Examples
 #### Basic
@@ -49,12 +50,11 @@ const Downloader = require('nodejs-file-downloader');
 
    const downloader = new Downloader({     
       url: 'http://212.183.159.230/200MB.zip',     
-      directory: "./downloads/2020/May",//Sub directories will also be automatically created if they do not exist.           
-    })
-
-    downloader.on('progress',(percentage)=>{//Downloader is an event emitter. You can register a "progress" event.
-        console.log('% ',percentage)
-    })
+      directory: "./downloads/2020/May",//Sub directories will also be automatically created if they do not exist.  
+      onProgress:function(percentage){//Gets called with each chunk.
+           console.log('% ',percentage)   
+      }         
+    })    
     
     await downloader.download();   
 
@@ -117,6 +117,31 @@ There is an alternative way to using Downloader.download():
   }  
 
   //Note that Downloader.download() simply combines these two function calls.
+
+
+```
+
+&nbsp;
+
+
+
+#### Repeat failed downloads automatically
+
+The program can repeat any failed http request or a stream automatically. Just set the maxAttempts property.
+Note that this applies separately both to the http request and the stream(each will have 3 maxAttemps, in this example).
+
+```javascript
+
+  const downloader = new Downloader({     
+      url: 'http://212.183.159.230/200MB.zip',     
+      directory: "./",
+      maxAttempts:3,//Default is 1.
+      onError:function(error){//You can also hook into each failed attempt.
+        console.log('Error from attempt ',error)
+      }        
+  })   
+
+  await downloader.dowload();
 
 
 ```
