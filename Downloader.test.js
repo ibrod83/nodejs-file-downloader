@@ -87,7 +87,7 @@ describe('Downloader tests', () => {
         await verifyFile('./downloads/contentType.jpeg', 23642);
         //  console.log(verify)
 
-        console.log('Download complete')
+        
     })
 
     it('Should download a picture and overwrite the name', async () => {
@@ -113,7 +113,7 @@ describe('Downloader tests', () => {
         await verifyFile('./downloads/alternativeName.jpg', 23642);
         //  console.log(verify)
 
-        console.log('Download complete')
+        
     })
 
     it('Should download into a nested non-existing path', async () => {
@@ -138,7 +138,7 @@ describe('Downloader tests', () => {
         await verifyFile('./downloads/May/2020/Desert.jpg', 23642);
         //  console.log(verify)
 
-        console.log('Download complete')
+        
     })
 
     //**Assumes an already existing Desert.js file  */
@@ -164,7 +164,7 @@ describe('Downloader tests', () => {
         await verifyFile('./downloads/May/2020/Desert2.jpg', 23642);
         //  console.log(verify)
 
-        console.log('Download complete')
+        
     })
 
     it('Should handle a file without content-length', async () => {
@@ -189,7 +189,7 @@ describe('Downloader tests', () => {
         await verifyFile('./downloads/Koala.jpg');
         //  console.log(verify)
 
-        console.log('Download complete')
+        
     })
 
     it('Should handle a file without content-type', async () => {
@@ -214,7 +214,7 @@ describe('Downloader tests', () => {
         await verifyFile('./downloads/Lighthouse.jpg');
         //  console.log(verify)
 
-        console.log('Download complete')
+        
     })
 
     it('Should download a picture and get the name from content-disposition ', async () => {
@@ -241,7 +241,7 @@ describe('Downloader tests', () => {
         await verifyFile('./downloads/contentDispositionFile.jpg');
         //  console.log(verify)
 
-        console.log('Download complete')
+        
     })
 
 
@@ -267,7 +267,7 @@ describe('Downloader tests', () => {
         await verifyFile('./downloads/Hydrangeas.jpg');
         //  console.log(verify)
 
-        console.log('Download complete')
+        
     })
 
 
@@ -306,7 +306,7 @@ describe('Downloader tests', () => {
             // await verifyFile('./downloads/Koala2.jpg', 780831);
             //  console.log(verify)
 
-            console.log('Download complete')
+            
         } catch (error) {
             console.log(error)
             throw error
@@ -354,6 +354,179 @@ describe('Downloader tests', () => {
 
 
     })
+
+    it('Should repeat a request few times and fail', async () => {
+
+
+
+        mock.onGet("/400").reply(400)
+
+        try {
+            const downloader = new Downloader({
+                url: '/400',
+                directory: "./downloads",
+                maxAttempts:3
+            })
+            //   console.log(downloader)
+            // debugger;
+            await downloader.download();
+            // await downloader.request();
+            debugger;
+            // await downloader.save();
+
+            // await verifyFile('./downloads/Koala.jpg', 29051);
+        } catch (error) {
+            // expect(1+2).toBe(1)
+            expect(error.message).toBe('Request failed with status code 400')
+            // debugger;
+        }
+
+
+
+
+    })
+
+
+    it('Should fail twice and finally succeed', async () => {
+        const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'));
+
+        let counter = 0;
+        mock.onGet("/400").reply(function (config) {
+            // debugger;
+            let status;
+            counter++
+            if (counter < 3) {
+                status = 400
+            } else {
+                status = 200
+            }
+            return [
+                status,
+                stream,
+                {}
+            ];
+        });
+
+        try {
+            const downloader = new Downloader({
+                timeout: 1000,
+                url: '/400',
+                directory: "./downloads",
+                maxAttempts:3
+
+            })
+            //   console.log(downloader)
+            // debugger;
+            var onErrorCount = 0
+            downloader.on('error', (e) => {
+                debugger;
+                onErrorCount++;
+                // console.log(e.message)
+            })
+            // await downloader.download();
+           const request =  await downloader.request()
+            await downloader.save()
+            // debugger;
+            var s = request.data;
+            // debugger;
+            
+            
+            // await verifyFile('./downloads/Koala.jpg', 29051);
+        } catch (error) {
+            // debugger;
+        }finally{
+            // debugger;
+            expect(s.constructor.name).toBe('ReadStream')
+            expect(onErrorCount).toBe(2)
+        }
+
+
+
+
+    })
+
+    it('Should fail once and finally fail', async () => {
+   
+
+       
+        mock.onGet("/500").reply(500);
+
+        try {
+            const downloader = new Downloader({
+                timeout: 1000,
+                url: '/500',
+                directory: "./downloads",
+                maxAttempts:1
+
+            })
+
+            var onErrorCount = 0
+            downloader.on('error', (e) => {
+                // debugger;
+                onErrorCount++;
+                // console.log(e.message)
+            })
+            await downloader.download();
+
+        } catch (error) {
+            // debugger;
+        }finally{
+            // debugger;
+            // expect(s.constructor.name).toBe('ReadStream')
+            expect(onErrorCount).toBe(1)
+        }
+
+
+
+
+    })
+
+    // it('Should fail three times during stream', async function() {
+    //     // this.timeout(10000)
+        
+    //     mock.onGet("/fileThatDoesntExist").reply(function (config) {
+    //         // debugger;
+    //         const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Desert.jpg'));
+    //         stream.destroy();
+           
+    //         return [
+    //             200,
+    //             stream,
+    //             {}
+    //         ];
+    //     });
+
+    //     try {
+    //         const downloader = new Downloader({
+    //             timeout: 1000,
+    //             url: '/fileThatDoesntExist',
+    //             directory: "./downloads",
+
+    //         })
+
+    //         var onErrorCount = 0
+    //         downloader.on('error', (e) => {
+    //             onErrorCount++;
+    //         })
+    //        const request =  await downloader.request()
+    //        debugger;
+    //         await downloader.save()
+    //         debugger;
+    //         // await downloader.download();
+            
+            
+    //     } catch (error) {
+    //         debugger;
+    //         // console.log(error)
+    //     }finally{
+    //         debugger;
+    //         expect(onErrorCount).toBe(3)
+    //     }
+
+
+
+
+    // })
 
 
 

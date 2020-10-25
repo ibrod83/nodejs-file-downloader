@@ -5,11 +5,12 @@ const { Transform } = require('stream')
 const util = require('util');
 // var HttpsProxyAgent = require('https-proxy-agent');
 const { EventEmitter } = require('events')
-const FileProcessor = require('./FileProcessor');
+const FileProcessor = require('./utils/FileProcessor');
 const pipeline = util.promisify(stream.pipeline);
 const mkdir = util.promisify(fs.mkdir);
 const writeFile = util.promisify(fs.writeFile);
-const {deduceFileName} = require('./fileName')
+const { deduceFileName } = require('./utils/fileName');
+const rpur = require('./utils/rpur');
 
 
 
@@ -55,11 +56,12 @@ module.exports = class Downloader extends EventEmitter {
    * @param {object} config 
    * @param {string} config.url 
    * @param {string} [config.directory]    
-   * @param {string} [config.fileName] 
+   * @param {string} [config.fileName = undefined] 
    * @param {boolean} [config.cloneFiles=true] 
    * @param {number} [config.timeout=6000] 
-   * @param {object} [config.headers] 
-   * @param {object} [config.httpsAgent] 
+   * @param {number} [config.maxAttempts=1] 
+   * @param {object} [config.headers = undefined] 
+   * @param {object} [config.httpsAgent = undefined] 
    * @param {boolean} [config.shouldBufferResponse = false] 
    * @param {boolean} [config.useSynchronousMode = false] 
    */
@@ -72,11 +74,13 @@ module.exports = class Downloader extends EventEmitter {
 
     const defaultConfig = {
       directory: './',
-      fileName: null,
+      fileName: undefined,
       timeout: 6000,
-      useSynchronousMode:false,
-      proxy: null,
-      cloneFiles: true,
+      maxAttempts:1,
+      useSynchronousMode: false,
+      httpsAgent:undefined,
+      headers:undefined,
+      cloneFiles: true,      
       shouldBufferResponse: false
     }
 
@@ -97,28 +101,32 @@ module.exports = class Downloader extends EventEmitter {
   /**
    * @return {Promise<axios.AxiosResponse>}
    */
-  async request(){
-    const response = await this._makeRequest();
+  async request() {
+    // const response = await this._makeRequest();
+    // const response = await this._makeRequestUntilSuccessful();
+    const response = await this._makeUntilSuccessful(this._makeRequest);
     this.response = response;
     if (this._events.response) {
       this.emit('response', response)
     }
     const contentLength = response.headers['content-length'] || response.headers['Content-Length'];
     this.fileSize = parseInt(contentLength);
-    return response; 
+    return response;
 
   }
 
   /**
    * @return {Promise<void>}
    */
-  async save(){
-    if(this.config.shouldBufferResponse){
+  async save() {
+    if (this.config.shouldBufferResponse) {
       // debugger;
-      return this._saveFromBuffer(this.response.data);
+      // return this._saveFromBuffer(this.response.data);
+      return this._makeUntilSuccessful(async()=>{await this._saveFromBuffer(this.response.data)});
     }
     // debugger;
-    await this._saveFromReadableStream(this.response.data);
+    // await this._saveFromReadableStream(this.response.data);
+    await this._makeUntilSuccessful(async()=>{await this._saveFromReadableStream(this.response.data)});
   }
 
 
@@ -128,17 +136,49 @@ module.exports = class Downloader extends EventEmitter {
   async download() {
 
     await this.request();
+    // debugger;
     await this.save()
   }
 
+  
+
+  /**
+   * @param {Function} asyncFunc
+   * @return {Promise<any>} 
+   */
+  async _makeUntilSuccessful(asyncFunc) {
+
+    let data;
+    // debugger;
+    const func = asyncFunc.bind(this)
+    await rpur(async () => {
+      // debugger;
+
+      data = await func();
+      // debugger;
+    }, {
+      onError: (e) => {
+        // debugger;
+        if (this._events.error) {
+          this.emit('error', e);
+        }
+      },
+      maxAttempts:this.config.maxAttempts
+      // maxAttempts:1
+    })
+    // debugger;
+    return data;
+
+
+  }
   /**
    * 
    * @return {Promise<axios.AxiosResponse>}
    */
   async _makeRequest() {
-   
+    // debugger;
     const shouldBuffer = this.config.shouldBufferResponse
-    const httpsAgent = this.config.httpsAgent; 
+    const httpsAgent = this.config.httpsAgent;
     const response = await axios({
       method: 'get',
       url: this.config.url,
@@ -153,19 +193,6 @@ module.exports = class Downloader extends EventEmitter {
     return response;
   }
 
-  async _createReadStream() {
-
-    const response = await this._makeRequest()
-
-    if (this._events.response) {
-      this.emit('response', response)
-    }
-    const contentLength = response.headers['content-length'] || response.headers['Content-Length'];
-    this.fileSize = parseInt(contentLength);
-
-    // this.response = response;
-    return response.data;
-  }
 
 
   _createWriteStream(fullPath) {
@@ -174,7 +201,7 @@ module.exports = class Downloader extends EventEmitter {
   }
 
 
-  _getProgressStream(){
+  _getProgressStream() {
     const that = this;
     const progress = new Transform({
       // writableObjectMode: true,
@@ -195,26 +222,18 @@ module.exports = class Downloader extends EventEmitter {
     });
 
     return progress;
-    
+
   }
 
-  _saveFromReadableStream(read){
-  
+  async _saveFromReadableStream(read) {
+    // yoyo
+    const fileName = await this._getFinalFileName();
 
-    return new Promise(async (resolve, reject) => {
-      try {       
-        const fileName = await this._getFinalFileName();
+    const progress = this._getProgressStream();
+    const write = this._createWriteStream(`${this.config.directory}/${fileName}`)
 
-        const progress = this._getProgressStream();
-        const write = this._createWriteStream(`${this.config.directory}/${fileName}`)
+    await pipeline(read, progress, write)
 
-        await pipeline(read, progress, write)
-
-        resolve();
-      } catch (error) {
-        reject(error)
-      }
-    })
   }
 
   async _saveFromBuffer(buffer) {
@@ -228,7 +247,7 @@ module.exports = class Downloader extends EventEmitter {
 
   }
 
-  
+
 
   async _getFinalFileName() {
     // debugger;
@@ -239,7 +258,7 @@ module.exports = class Downloader extends EventEmitter {
       fileName = deduceFileName(this.config.url, this.response.headers)
     }
     // debugger;
-    var fileProcessor = new FileProcessor({useSynchronousMode:this.config.useSynchronousMode, fileName, path: this.config.directory })
+    var fileProcessor = new FileProcessor({ useSynchronousMode: this.config.useSynchronousMode, fileName, path: this.config.directory })
     // debugger;
     // if (! await fileProcessor.pathExists(this.config.directory)) {
     if (!await fileProcessor.pathExists(this.config.directory)) {
