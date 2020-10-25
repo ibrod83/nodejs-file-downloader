@@ -1,4 +1,4 @@
-nodejs-file-downloader is a simple utility for downloading files. It hides the complexity of dealing with streams, paths and duplicate file names. Can automatically repeat failed downloads.
+nodejs-file-downloader is a simple utility for downloading files. It hides the complexity of dealing with streams, paths and duplicate file names. Can automatically repeat failed requests.
 
 If you encounter any bugs or have a question, please don't hesitate to open an issue.
 
@@ -14,7 +14,7 @@ $ npm install nodejs-file-downloader
   * [Custom file name](#custom-file-name)  
   * [Overwrite existing files](#overwrite-existing-files)  
   * [Get response and then download](#get-response-and-then-download)  
-  * [Repeat failed downloads automatically](#repeat-failed-downloads-automatically)  
+  * [Repeat failed requests automatically](#repeat-failed-requests-automatically)  
 
 ## Examples
 #### Basic
@@ -125,10 +125,11 @@ There is an alternative way to using Downloader.download():
 
 
 
-#### Repeat failed downloads automatically
+#### Repeat failed requests automatically
 
-The program can repeat any failed http request or a stream automatically. Just set the maxAttempts property.
-Note that this applies separately both to the http request and the stream(each will have 3 maxAttemps, in this example).
+The program can repeat any failed http request automatically. Only if the provided config.maxAttempts number is exceeded, an Error is thrown.
+
+Note that currently only the http requests will be repeated in case of an error, BUT NOT THE STREAM ITSELF. If a stream fails on its first attempt, an error is thrown as usual. I will change this behavior in the future.
 
 ```javascript
 
@@ -136,7 +137,7 @@ Note that this applies separately both to the http request and the stream(each w
       url: 'http://212.183.159.230/200MB.zip',     
       directory: "./",
       maxAttempts:3,//Default is 1.
-      onError:function(error){//You can also hook into each failed attempt.
+      onError:function(error){//You can also hook into each failed http request attempt.
         console.log('Error from attempt ',error)
       }        
   })   

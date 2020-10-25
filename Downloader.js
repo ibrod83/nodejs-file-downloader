@@ -135,12 +135,12 @@ module.exports = class Downloader {
   async save() {
     if (this.config.shouldBufferResponse) {
       // debugger;
-      // return this._saveFromBuffer(this.response.data);
-      return this._makeUntilSuccessful(async()=>{await this._saveFromBuffer(this.response.data)});
+      return this._saveFromBuffer(this.response.data);
+      // return this._makeUntilSuccessful(async()=>{await this._saveFromBuffer(this.response.data)});
     }
     // debugger;
-    // await this._saveFromReadableStream(this.response.data);
-    await this._makeUntilSuccessful(async()=>{await this._saveFromReadableStream(this.response.data)});
+    await this._saveFromReadableStream(this.response.data);
+    // await this._makeUntilSuccessful(async()=>{await this._saveFromReadableStream(this.response.data)});
   }
 
 

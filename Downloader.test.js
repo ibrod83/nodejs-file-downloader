@@ -360,9 +360,12 @@ describe('Downloader tests', () => {
             // debugger;
             await downloader.download();
 
-            // await verifyFile('./downloads/Koala.jpg', 29051);
+            
         } catch (error) {
-            debugger;
+            // debugger;
+           
+        }finally{
+             await verifyFile('./downloads/Koala.jpg', 29051);
         }
 
 
