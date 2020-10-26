@@ -8,6 +8,7 @@ const Path = require('path');
 const rimraf = require('rimraf')
 const Downloader = require('./Downloader');
 const { Readable } = require('stream');
+const { debug } = require('console');
 
 
 
@@ -435,7 +436,7 @@ describe('Downloader tests', () => {
                 directory: "./downloads",
                 maxAttempts: 3,
                 onError: (e) => {
-                    debugger;
+                    // debugger;
                     onErrorCount++;
                     // console.log(e.message)
                 }
@@ -449,10 +450,10 @@ describe('Downloader tests', () => {
             //     onErrorCount++;
             //     // console.log(e.message)
             // })
-            // await downloader.download();
-            const request = await downloader.request()
-            debugger;
-            await downloader.save()
+            await downloader.download();
+            // const request = await downloader.request()
+            // debugger;
+            // await downloader.save()
             // debugger;
             // var s = request.data;
             // debugger;
@@ -527,12 +528,12 @@ describe('Downloader tests', () => {
                 if (counter === 4) {
                     for await (const chunk of stream) {
                         yield chunk;
-                        
-                    } 
-                }else{
-                  throw new Error('LOL');  
+
+                    }
+                } else {
+                    throw new Error('LOL');
                 }
-                
+
 
             })());
 
@@ -562,13 +563,13 @@ describe('Downloader tests', () => {
 
             var onErrorCount = 0
             downloader.on('error', (e) => {
-                debugger;
+                // debugger;
                 onErrorCount++;
             })
             // const response = await downloader.request()
             // debugger;
             // await downloader.save()
-            debugger;
+            // debugger;
             await downloader.download();
 
 
@@ -580,6 +581,104 @@ describe('Downloader tests', () => {
             expect(onErrorCount).toBe(3)
             // await verifyFile('./downloads/koala.jpg', 29051);
         }
+
+
+
+
+    })
+
+    it('Should use onResponse to stop download', async function () {
+        
+        const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'));
+        mock.onGet("/koala.jpg").reply(function (config) {
+            return [
+                200,
+                stream,
+                {'message':'terminate'}
+            ];
+        });
+
+
+        const downloader = new Downloader({
+            timeout: 1000,
+            // debugMode:true,
+            maxAttempts: 4,
+            fileName:'yoyo',
+            onResponse: function (response) {
+                if (response.headers['message'] !== 'terminate') {
+                    // return true
+                }
+                return false;
+            },
+            url: '/koala.jpg',
+            directory: "./downloads",
+
+        })
+
+       try {
+          await downloader.download();
+        debugger; 
+       } catch (error) {
+           debugger;
+           throw error
+       }
+        
+        try {
+           await verifyFile('./downloads/yoyo', 29051);  
+        } catch (error) {
+            debugger
+            return;
+        }  
+
+        throw new Error();
+
+
+
+
+
+    })
+
+
+    it('Should use onResponse to continue download', async function () {
+        
+        const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'));
+        mock.onGet("/koala.jpg").reply(function (config) {
+            return [
+                200,
+                stream,
+                {'message':'do not terminate'}
+            ];
+        });
+
+
+        const downloader = new Downloader({
+            timeout: 1000,
+            // debugMode:true,
+            maxAttempts: 4,
+            onResponse: function (response) {
+                if (response.headers['message'] !== 'terminate') {
+                    // return true
+                    return;
+                }
+                return false;
+            },
+            url: '/koala.jpg',
+            directory: "./downloads",
+
+        })
+
+       
+       const prom =  await downloader.download();
+        debugger;
+        // try {
+           await verifyFile('./downloads/koala.jpg', 29051);  
+        // } catch (error) {
+            // debugger
+            // return;
+        // }  
+
+        // throw new Error();
+
 
 
 

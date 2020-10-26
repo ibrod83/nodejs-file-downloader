@@ -1,4 +1,4 @@
-nodejs-file-downloader is a simple utility for downloading files. It hides the complexity of dealing with streams, paths and duplicate file names. Can automatically repeat failed requests.
+nodejs-file-downloader is a simple utility for downloading files. It hides the complexity of dealing with streams, paths and duplicate file names. Can automatically repeat failed downloads.
 
 If you encounter any bugs or have a question, please don't hesitate to open an issue.
 
@@ -13,8 +13,8 @@ $ npm install nodejs-file-downloader
   * [Get the progress of a download](#get-the-progress-of-a-download)  
   * [Custom file name](#custom-file-name)  
   * [Overwrite existing files](#overwrite-existing-files)  
-  * [Get response and then download](#get-response-and-then-download)  
-  * [Repeat failed requests automatically](#repeat-failed-requests-automatically)  
+  * [Hook into response](#hook-into-response)  
+  * [Repeat failed downloads automatically](#repeat-failed-downloads-automatically)  
 
 ## Examples
 #### Basic
@@ -96,28 +96,30 @@ By default, nodejs-file-downloader uses config.cloneFiles = true, which means th
 
 &nbsp;
 
-#### Get response and then download
+#### Hook into response
 
-There is an alternative way to using Downloader.download():
+If you need to get the underlying response, in order to decide whether the download should continue, or perform any other operations, use the onReponse hook.
 
 ```javascript
 
+  //The response object is an Axios response object. Refer to their docs for more details.
+  function onResponse(response){
+    //Now you can do something with the response, like check the headers
+    if(response.headers['content-length'] > 1000000){
+      console.log('File is too big!')
+      return false;//If you return false, the download process is stopped, and downloader.download() is resolved.
+    } 
+    
+    //Returning any other value, including undefined, will tell the downloader to proceed as usual.
+  }
+
   const downloader = new Downloader({     
       url: 'http://212.183.159.230/200MB.zip',     
-      directory: "./",        
+      directory: "./",
+      onResponse        
   }) 
 
-  const response = await downloader.request()//This function just performs the request. The file isn't actually being downloaded yet. It returns an Axios response object. You can refer to their docs for more details.
-
-  //Now you can do something with the response, like check the headers
-  if(response.headers['content-length'] < 1000000){
-    await downloader.save()
-  }else{
-    console.log('File is too big!')
-  }  
-
-  //Note that Downloader.download() simply combines these two function calls.
-
+  const response = await downloader.download()
 
 ```
 
@@ -125,11 +127,10 @@ There is an alternative way to using Downloader.download():
 
 
 
-#### Repeat failed requests automatically
+#### Repeat failed downloads automatically
 
-The program can repeat any failed http request automatically. Only if the provided config.maxAttempts number is exceeded, an Error is thrown.
+The program can repeat any failed downloads automatically. Only if the provided config.maxAttempts number is exceeded, an Error is thrown.
 
-Note that currently only the http requests will be repeated in case of an error, BUT NOT THE STREAM ITSELF. If a stream fails on its first attempt, an error is thrown as usual. I will change this behavior in the future.
 
 ```javascript
 
@@ -137,7 +138,7 @@ Note that currently only the http requests will be repeated in case of an error,
       url: 'http://212.183.159.230/200MB.zip',     
       directory: "./",
       maxAttempts:3,//Default is 1.
-      onError:function(error){//You can also hook into each failed http request attempt.
+      onError:function(error){//You can also hook into each failed attempt.
         console.log('Error from attempt ',error)
       }        
   })   

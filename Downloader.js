@@ -112,14 +112,26 @@ module.exports = class Downloader {
     this.config[`on${capitalize(event)}`] = callback
   }
 
-  /**
-   * @return {Promise<axios.AxiosResponse>}
+
+   /**
+   * @return {Promise<void>}
    */
-  async request() {
-    const response = await this._makeUntilSuccessful(this._request);
-    return response;
+  async download() {
+
+    await this._makeUntilSuccessful(async () => {
+      const response = await this._request();
+      // debugger;
+      if (this.config.onResponse) {
+        const shouldContinue = await this.config.onResponse(response);
+        if(shouldContinue === false){
+          return;
+        }
+      }
+      await this._save()
+    })
 
   }
+ 
 
   /**
    * @return {Promise<axios.AxiosResponse>}
@@ -129,9 +141,7 @@ module.exports = class Downloader {
     // const response = await this._makeRequestUntilSuccessful();
     // const response = await this._makeUntilSuccessful(this._makeRequest);
     this.response = response;
-    if (this.config.onResponse) {
-      await this.config.onResponse(response);
-    }
+    
     const contentLength = response.headers['content-length'] || response.headers['Content-Length'];
     this.fileSize = parseInt(contentLength);
     return response;
@@ -141,7 +151,7 @@ module.exports = class Downloader {
   /**
    * @return {Promise<void>}
    */
-  async save() {
+  async _save() {
     if (this.config.shouldBufferResponse) {
       // debugger;
       return this._saveFromBuffer(this.response.data);
@@ -153,20 +163,7 @@ module.exports = class Downloader {
   }
 
 
-  /**
-   * @return {Promise<void>}
-   */
-  async download() {
-
-    await this._makeUntilSuccessful(async () => {
-      await this._request();
-      // debugger;
-      await this.save()
-    })
-
-  }
-
-
+ 
 
   /**
    * @param {Function} asyncFunc
@@ -253,14 +250,14 @@ module.exports = class Downloader {
 
   async _saveFromReadableStream(read) {
     // yoyo
-    debugger;
+    // debugger;
     const fileName = await this._getFinalFileName();
 
     const progress = this._getProgressStream();
     const write = this._createWriteStream(`${this.config.directory}/${fileName}`)
-    debugger
+    // debugger
     await pipeline(read, progress, write)
-    debugger;
+    // debugger;
 
   }
 
