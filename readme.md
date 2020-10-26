@@ -119,7 +119,7 @@ If you need to get the underlying response, in order to decide whether the downl
       onResponse        
   }) 
 
-  const response = await downloader.download()
+  await downloader.download()
 
 ```
 
