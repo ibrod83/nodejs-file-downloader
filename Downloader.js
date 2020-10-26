@@ -78,15 +78,15 @@ module.exports = class Downloader {
       directory: './',
       fileName: undefined,
       timeout: 6000,
-      maxAttempts:1,
+      maxAttempts: 1,
       useSynchronousMode: false,
-      httpsAgent:undefined,
-      headers:undefined,
-      cloneFiles: true,      
+      httpsAgent: undefined,
+      headers: undefined,
+      cloneFiles: true,
       shouldBufferResponse: false,
-      onResponse:undefined,
-      onError:undefined,
-      onProgress:undefined
+      onResponse: undefined,
+      onError: undefined,
+      onProgress: undefined
     }
 
     this.config = {
@@ -94,8 +94,8 @@ module.exports = class Downloader {
       ...config
     }
 
-    if(this.config.filename){
-      this.config.fileName = this.config.filename 
+    if (this.config.filename) {
+      this.config.fileName = this.config.filename
     }
 
     this.response = null;
@@ -108,7 +108,7 @@ module.exports = class Downloader {
   }
 
   //For EventEmitter backwards compatibility
-  on(event,callback){
+  on(event, callback) {
     this.config[`on${capitalize(event)}`] = callback
   }
 
@@ -116,9 +116,18 @@ module.exports = class Downloader {
    * @return {Promise<axios.AxiosResponse>}
    */
   async request() {
-    // const response = await this._makeRequest();
+    const response = await this._makeUntilSuccessful(this._request);
+    return response;
+
+  }
+
+  /**
+   * @return {Promise<axios.AxiosResponse>}
+   */
+  async _request() {
+    const response = await this._makeRequest();
     // const response = await this._makeRequestUntilSuccessful();
-    const response = await this._makeUntilSuccessful(this._makeRequest);
+    // const response = await this._makeUntilSuccessful(this._makeRequest);
     this.response = response;
     if (this.config.onResponse) {
       await this.config.onResponse(response);
@@ -149,12 +158,15 @@ module.exports = class Downloader {
    */
   async download() {
 
-    await this.request();
-    // debugger;
-    await this.save()
+    await this._makeUntilSuccessful(async () => {
+      await this._request();
+      // debugger;
+      await this.save()
+    })
+
   }
 
-  
+
 
   /**
    * @param {Function} asyncFunc
@@ -171,13 +183,13 @@ module.exports = class Downloader {
       data = await func();
       // debugger;
     }, {
-      onError: async(e) => {
+      onError: async (e) => {
         // debugger;
         if (this.config.onError) {
           await this.config.onError(e);
         }
       },
-      maxAttempts:this.config.maxAttempts
+      maxAttempts: this.config.maxAttempts
       // maxAttempts:1
     })
     // debugger;
@@ -241,12 +253,14 @@ module.exports = class Downloader {
 
   async _saveFromReadableStream(read) {
     // yoyo
+    debugger;
     const fileName = await this._getFinalFileName();
 
     const progress = this._getProgressStream();
     const write = this._createWriteStream(`${this.config.directory}/${fileName}`)
-
+    debugger
     await pipeline(read, progress, write)
+    debugger;
 
   }
 
