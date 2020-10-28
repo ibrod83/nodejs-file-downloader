@@ -275,22 +275,12 @@ module.exports = class Downloader {
   }
 
   async _removeFailedFile(path){
-    try {
-       await unlink(path);
-    } catch (error) {
-      
-    }
-   
+    await unlink(path);
   }
 
   async _renameTempFileToFinalName(temp,final){
     debugger;
-    try {
-      await rename(temp,final)
-    } catch (error) {
-      
-    }
-    
+    await rename(temp,final)
     // await unlink(path);
 
   }

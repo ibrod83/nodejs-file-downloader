@@ -174,7 +174,7 @@ describe('Downloader tests', () => {
         // debugger;
         await downloader.download();
 
-        await verifyFile('./downloads/May/2020/Desert2.jpg', 23642);
+        await verifyFile('./downloads/May/2020/Desert_2.jpg', 23642);
         //  console.log(verify)
 
 
@@ -291,15 +291,20 @@ describe('Downloader tests', () => {
 
     it('Should download two pictures, with name appending', async () => {
         try {
-            mock.onGet("/Koala.jpg").reply(
-                200,
-                fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg')),
-                {
-                    'Content-Type': 'image/jpeg',
-                    'Content-Length': '29051'
-                }
+          
+                mock.onGet("/Koala.jpg").reply(function () {
 
-            )
+                    return [
+                        200,
+                        fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg')),
+                        {
+                            'Content-Type': 'image/jpeg',
+                            'Content-Length': '29051'
+                        }]
+                })
+
+
+
             const downloader = new Downloader({
                 url: '/Koala.jpg',
                 directory: "./downloads",
@@ -308,7 +313,7 @@ describe('Downloader tests', () => {
             //   console.log(downloader)
             // debugger;
             await downloader.download();
-
+            debugger;
             await verifyFile('./downloads/Koala.jpg', 29051);
 
             const downloader2 = new Downloader({
@@ -318,9 +323,9 @@ describe('Downloader tests', () => {
             //   console.log(downloader)
             // debugger;
             await downloader2.download();
+            debugger;
 
-
-            // await verifyFile('./downloads/Koala2.jpg', 780831);
+            await verifyFile('./downloads/Koala_2.jpg', 29051);
             //  console.log(verify)
 
 
@@ -545,17 +550,10 @@ describe('Downloader tests', () => {
         });
 
         try {
-            let error;
+
             const downloader = new Downloader({
                 timeout: 1000,
-                // debugMode:true,
-                maxAttempts: 4,
-                // onResponse:function(r){
-                //     if(r.headers=== 'yoyo'){
-                //         error='yoyo'
-                //         return false
-                //     }
-                // },
+                maxAttempts: 4,               
                 url: '/koala.jpg',
                 directory: "./downloads",
 
@@ -579,7 +577,7 @@ describe('Downloader tests', () => {
         } finally {
             debugger;
             expect(onErrorCount).toBe(3)
-            // await verifyFile('./downloads/koala.jpg', 29051);
+            await verifyFile('./downloads/koala.jpg', 29051);
         }
 
 
@@ -588,7 +586,7 @@ describe('Downloader tests', () => {
     })
 
     it('Should use onResponse to stop download', async function () {
-        
+
         const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'));
         mock.onGet("/koala.jpg").reply(function (config) {
             return [
@@ -622,7 +620,7 @@ describe('Downloader tests', () => {
            debugger;
            throw error
        }
-        
+
         try {
            await verifyFile('./downloads/yoyo', 29051);  
         } catch (error) {
@@ -640,7 +638,7 @@ describe('Downloader tests', () => {
 
 
     it('Should use onResponse to continue download', async function () {
-        
+
         const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'));
         mock.onGet("/koala.jpg").reply(function (config) {
             return [
@@ -667,7 +665,7 @@ describe('Downloader tests', () => {
 
         })
 
-       
+
        const prom =  await downloader.download();
         debugger;
         // try {

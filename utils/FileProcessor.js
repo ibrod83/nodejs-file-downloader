@@ -88,7 +88,7 @@ class FileProcessor {
         }
 
         counter = counter + 1;
-        let newFileName = this.fileNameWithoutExtension + counter + this.fileExtension;
+        let newFileName = this.fileNameWithoutExtension + "_"+ counter + this.fileExtension;
 
         return this.createNewFileNameSync(newFileName, counter);
 
@@ -103,7 +103,7 @@ class FileProcessor {
         }
 
         counter = counter + 1;
-        let newFileName = this.fileNameWithoutExtension + counter + this.fileExtension;
+        let newFileName = this.fileNameWithoutExtension + "_"+ counter + this.fileExtension;
 
         return await this.createNewFileName(newFileName, counter);
 
