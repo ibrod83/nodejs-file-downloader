@@ -1,7 +1,8 @@
 const fs = require('fs');
-const axios = require('axios');
+// const axios = require('axios');
+const { request } = require('./request');
 const stream = require('stream');
-const { Transform } = require('stream')
+const { Transform, Stream } = require('stream')
 const util = require('util');
 const FileProcessor = require('./utils/FileProcessor');
 const pipeline = util.promisify(stream.pipeline);
@@ -98,8 +99,11 @@ module.exports = class Downloader {
       this.config.fileName = this.config.filename
     }
 
-    this.response = null;
     this.readStream = null;
+    this.buffer = null;
+    this.responseHeaders = null;
+    // this.response = null;
+
     this.fileSize = null;
     this.currentDataSize = 0;
 
@@ -113,9 +117,9 @@ module.exports = class Downloader {
   }
 
 
-   /**
-   * @return {Promise<void>}
-   */
+  /**
+  * @return {Promise<void>}
+  */
   async download() {
 
     await this._makeUntilSuccessful(async () => {
@@ -123,7 +127,7 @@ module.exports = class Downloader {
       // debugger;
       if (this.config.onResponse) {
         const shouldContinue = await this.config.onResponse(response);
-        if(shouldContinue === false){
+        if (shouldContinue === false) {
           return;
         }
       }
@@ -131,17 +135,19 @@ module.exports = class Downloader {
     })
 
   }
- 
+
 
   /**
-   * @return {Promise<axios.AxiosResponse>}
+   * @return {Promise<{headers:object,readStream:Stream}>}
    */
   async _request() {
     const response = await this._makeRequest();
     // const response = await this._makeRequestUntilSuccessful();
     // const response = await this._makeUntilSuccessful(this._makeRequest);
-    this.response = response;
-    
+    // this.response = response;
+    this.readStream = response.readStream;
+    this.responseHeaders = response.headers;
+    debugger;
     const contentLength = response.headers['content-length'] || response.headers['Content-Length'];
     this.fileSize = parseInt(contentLength);
     return response;
@@ -154,16 +160,17 @@ module.exports = class Downloader {
   async _save() {
     if (this.config.shouldBufferResponse) {
       // debugger;
-      return this._saveFromBuffer(this.response.data);
+      const buffer = await this._createBufferFromResponseStream(this.readStream);
+      return this._saveFromBuffer(buffer);
       // return this._makeUntilSuccessful(async()=>{await this._saveFromBuffer(this.response.data)});
     }
     // debugger;
-    await this._saveFromReadableStream(this.response.data);
+    await this._saveFromReadableStream(this.readStream);
     // await this._makeUntilSuccessful(async()=>{await this._saveFromReadableStream(this.response.data)});
   }
 
 
- 
+
 
   /**
    * @param {Function} asyncFunc
@@ -196,20 +203,25 @@ module.exports = class Downloader {
   }
   /**
    * 
-   * @return {Promise<axios.AxiosResponse>}
+   * @return {Promise<{headers:object,readStream:Stream}>}
    */
   async _makeRequest() {
     // debugger;
-    const shouldBuffer = this.config.shouldBufferResponse
+    // const shouldBuffer = this.config.shouldBufferResponse
     const httpsAgent = this.config.httpsAgent;
-    const response = await axios({
-      method: 'get',
-      url: this.config.url,
+    // const response = await axios({
+    //   method: 'get',
+    //   url: this.config.url,
+    //   timeout: this.config.timeout,
+    //   headers: this.config.headers,
+    //   httpsAgent,
+    //   responseType: shouldBuffer ? 'arraybuffer' : 'stream'
+    // })
+    const response = await request(this.config.url, {
       timeout: this.config.timeout,
       headers: this.config.headers,
-      httpsAgent,
-      responseType: shouldBuffer ? 'arraybuffer' : 'stream'
-    })
+    });
+
     // debugger;
     // this.response = response;
 
@@ -221,6 +233,16 @@ module.exports = class Downloader {
   _createWriteStream(fullPath) {
     // console.log(fullPath)
     return fs.createWriteStream(fullPath)
+  }
+
+  async _createBufferFromResponseStream(stream) {
+    const chunks = []
+    for await (let chunk of stream) {
+      chunks.push(chunk)
+    }
+
+    const buffer = Buffer.concat(chunks)
+    return buffer;
   }
 
 
@@ -262,7 +284,7 @@ module.exports = class Downloader {
   }
 
   async _saveFromBuffer(buffer) {
-    // debugger;
+    debugger;
     // const response = await this._makeRequest(true);
     // this.response = response;
     const fileName = await this._getFinalFileName();
@@ -280,7 +302,7 @@ module.exports = class Downloader {
     if (this.config.fileName) {
       fileName = this.config.fileName
     } else {
-      fileName = deduceFileName(this.config.url, this.response.headers)
+      fileName = deduceFileName(this.config.url, this.responseHeaders)
     }
     // debugger;
     var fileProcessor = new FileProcessor({ useSynchronousMode: this.config.useSynchronousMode, fileName, path: this.config.directory })
