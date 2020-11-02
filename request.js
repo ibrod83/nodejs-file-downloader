@@ -1,6 +1,6 @@
 const http = require('http');
 const https = require('https');
-
+// const {get} = require('./httpAdapter')
 // const defaultHeaders = {
 //     // "Accept-Encoding": "gzip,deflate",
 //     // 'User-Agent': "node-fetch/1.0",
@@ -15,19 +15,19 @@ function request(url, config = {}) {
     //     ...defaultHeaders,
     //     ...config.headers
     // }
+    const {httpsAgent,headers,timeout} = config;
     const options = {
-        headers:config.headers,
-        timeout: config.timeout
+        headers,
+        timeout,
+        agent:httpsAgent
     }
 
     return new Promise((resolve, reject) => {
 
         const protocol = url.trim().startsWith('https') ? https : http;
 
-        // if (timeout) {
-        //     request.setTimeout(timeout);
-        // }
         debugger;
+        // const request = get(url, options, (res) => {
         const request = protocol.get(url, options, (res) => {
             debugger;
             if (res.statusCode !== 200) {
@@ -35,12 +35,10 @@ function request(url, config = {}) {
                 res.resume();
                 return reject(new CustomError({ code: res.statusCode, message: `Request failed with status ${res.statusCode}` }))
             }
-
             resolve({
                 readStream: res,
                 headers: res.headers
             })
-
             // res.pipe(fs.createWriteStream(dest)).once('close', () => resolve());
         })
             .on('timeout', (e) => {

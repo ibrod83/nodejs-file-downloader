@@ -220,6 +220,7 @@ module.exports = class Downloader {
     const response = await request(this.config.url, {
       timeout: this.config.timeout,
       headers: this.config.headers,
+      httpsAgent
     });
 
     // debugger;
@@ -308,15 +309,15 @@ module.exports = class Downloader {
     var fileProcessor = new FileProcessor({ useSynchronousMode: this.config.useSynchronousMode, fileName, path: this.config.directory })
     // debugger;
     // if (! await fileProcessor.pathExists(this.config.directory)) {
-    if (!await fileProcessor.pathExists(this.config.directory)) {
-      // debugger;
-      try {
-        await mkdir(this.config.directory, { recursive: true });
-      } catch (error) {
-        // debugger;
-      }
+    // if (!await fileProcessor.pathExists(this.config.directory)) {
+    // debugger;
+    // try {
+    await mkdir(this.config.directory, { recursive: true });
+    // } catch (error) {
+    // debugger;
+    // }
 
-    }
+    // }
     if (this.config.cloneFiles) {
 
 
