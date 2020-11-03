@@ -47,8 +47,8 @@ function request(url, config = {}) {
             })
             .on('error', (e) => { reject(new CustomError({ message: e.message })) });
             debugger;
-        if (config.timeout)
-            request.setTimeout(config.timeout)
+        if (options.timeout)
+            request.setTimeout(options.timeout)
 
     })
 }
