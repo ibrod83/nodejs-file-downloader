@@ -144,7 +144,7 @@ module.exports = class Downloader {
 
 
   /**
-   * @return {Promise<{headers:object,readStream:Stream}>}
+   * @return {Promise<Stream}>}
    */
   async _request() {
     const response = await this._makeRequest();
@@ -153,7 +153,7 @@ module.exports = class Downloader {
     // this.response = response;
     // this.readStream = response.readStream;
     // this.responseHeaders = response.headers;
-    debugger;
+    // debugger;
     // this.response = response;
 
     const contentLength = response.headers['content-length'] || response.headers['Content-Length'];
@@ -163,19 +163,19 @@ module.exports = class Downloader {
   }
 
   /**
-   * @param {{headers:object,readStream:Stream}} response
+   * @param {Stream}} response
    * @return {Promise<void>}
    */
   async _save(response) {
     const finalFileName = await this._getFinalFileName(response.headers);
     if (this.config.shouldBufferResponse) {
       // debugger;
-      const buffer = await this._createBufferFromResponseStream(response.readStream);
+      const buffer = await this._createBufferFromResponseStream(response);
       return this._saveFromBuffer(buffer, finalFileName);
       // return this._makeUntilSuccessful(async()=>{await this._saveFromBuffer(this.response.data)});
     }
     // debugger;
-    await this._saveFromReadableStream(response.readStream, finalFileName);
+    await this._saveFromReadableStream(response, finalFileName);
     // await this._makeUntilSuccessful(async()=>{await this._saveFromReadableStream(this.response.data)});
   }
 
@@ -196,6 +196,7 @@ module.exports = class Downloader {
       data = await func();
     }, {
       onError: async (e) => {
+        debugger;
         if (this.config.onError) {
           await this.config.onError(e);
         }
@@ -217,7 +218,10 @@ module.exports = class Downloader {
     const response = await request(this.config.url, {
       timeout: this.config.timeout,
       headers: this.config.headers,
-      httpsAgent
+      httpsAgent,
+      // onTimeout:(()=>{
+      //   console.log('TIMEOUT')
+      // })
     });
 
 
@@ -272,7 +276,12 @@ module.exports = class Downloader {
 
 
   async _pipeStreams(arrayOfStreams) {
-    await pipelinePromisified(...arrayOfStreams);
+    // try {
+      await pipelinePromisified(...arrayOfStreams);
+    // } catch (error) {
+      // debugger;
+    // }
+    
   }
 
 
@@ -283,13 +292,13 @@ module.exports = class Downloader {
     // const tempPath = this._getTempFilePath(finalPath);
     const write = this._createWriteStream(finalPath)
     // try {
-    debugger;
+    // debugger;
 
     if (this.config.onProgress) {
       const progressStream = this._getProgressStream()
       return await this._pipeStreams([read, progressStream, write])
     }
-
+    debugger;
     await this._pipeStreams([read, write])
     // return new Promise((resolve, reject) => {
     //   read.pipe(write)
