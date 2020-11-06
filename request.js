@@ -1,6 +1,7 @@
 const { read } = require('fs');
 const http = require('http');
 const https = require('https');
+debugger
 const { Readable } = require('stream');
 const { once } = require('events');
 // const {get} = require('./httpAdapter')
@@ -11,68 +12,13 @@ const { once } = require('events');
 // }
 
 async function request(url, config = {}) {
-   
-    // // debugger;
-    // const protocol = url.trim().startsWith('https') ? https : http;
-    // const { httpsAgent, headers, timeout,  } = config;
-    // const options = {
-    //     headers,
-    //     timeout,
-    //     agent: httpsAgent,
-    //     // onTimeout//Function
-    // }
-
-    // let respReceived = false;
-
-    // //ClientRequest
-    // const request = protocol.get(url, options);
-    // request.on('timeout', () => {
-    //     debugger
-    //     if(respReceived){
-    //         response.emit(new Error('Stream timed out'));
-    //         // request.destroy()
-
-    //     }else{
-    //         request.destroy(new Error('Request timed out'))
-    //     }
-    //     // request.destroy(
-    //     //     respReceived
-    //     //         ? new Error('Stream timed out')
-    //     //         : new Error('Request timed out')
-    //     // );
-    // });
-
-    // //IncomingMessage
-    // const response = await new Promise((resolve, reject) => {        
-    //     request
-    //         .on('response', resolve)
-    //         .on('error', reject);
-    // });
-    // debugger;
-
-    // respReceived = true;
-    // // debugger;
-  
-
-    // // const [response] = await once(request, 'response');
-
-   
-
-    // if (response.statusCode !== 200) {
-    //     // Consume response data to free up memory
-    //     response.resume();
-    //     throw new CustomError({ code: res.statusCode, message: `Request failed with status ${res.statusCode}` });
-    // }
-
-
-    // debugger
-    // return response
-
+    // console.log(process.env)
+    
     return new Promise((resolve, reject) => {
+        // debugger;
+        const { httpsAgent, headers, timeout, } = config;
 
-        const { httpsAgent, headers, timeout, onTimeout } = config;
-
-
+        debugger;
         const options = {
             headers,
             timeout,
@@ -83,53 +29,51 @@ async function request(url, config = {}) {
         const protocol = url.trim().startsWith('https') ? https : http;
         let readStream;
 
-        const request = protocol.get(url, options, (res) => {
+        const request = protocol.request(url, options, (res) => {
             readStream = res;
-
+            debugger;
             if (res.statusCode !== 200) {
                 res.resume();
-                return reject(new CustomError({ code: res.statusCode, message: `Request failed with status ${res.statusCode}` }))
+                return reject(new Error(`Request failed with status code ${res.statusCode}` ))
             }
             resolve(readStream)
 
-        }).on('timeout', (e) => {
-            // debugger;
-            // timedOut = true;
-            reject(new CustomError({ message: `Request timed out` }))
-            if (readStream){
-                debugger;
-                //  readStream.emit('error', new Error('Stream timed out'));
-                // request.destroy()
-                readStream.destroy(new Error('Stream timed out'));
-                // readStream.emit('error', new Error('Stream timed out'));
-            }
-               
-           
-            debugger;
+        }).end()
 
-            
-            // request.destroy(new Error('Request was destroyed due to time out!!'))
-        })
-            .on('error', (e) => { reject(new CustomError({ message: e.message })) });
+            .on('error', (e) => { reject(new Error(e.message)) });
         // debugger;
         if (options.timeout)
-            request.setTimeout(options.timeout)
+            request.setTimeout(options.timeout, () => {
+                request.destroy(new Error(`Request timed out`))
+                reject(new Error( `Request timed out` ))
+                // console.log('after reject')
+                if (readStream) {                 
+                    debugger;
+                    if (parseInt(process.versions.node.split('.')[0]) < 12) {
+                        readStream.emit('error', new Error('Request timed out'));
+                    }
+
+                }                
+
+            })
 
 
     })
 }
 
 
-class CustomError extends Error {
-    // debugger;
-    constructor({ code, response, message, errno }) {
-        super(message)
-        // this.config = config;//The config object of the failing request
-        this.errno = errno//Error constant. Will be set Only in the case of network errors.
-        this.code = code;//http code.Null if network error
-        this.response = response//Reference to the customResponse. Will not be set in network errors.
-        Error.captureStackTrace(this, CustomError);
-    }
-}
+
+
+// class CustomError extends Error {
+//     // debugger;
+//     constructor({ code, response, message, errno }) {
+//         super(message)
+//         // this.config = config;//The config object of the failing request
+//         this.errno = errno//Error constant. Will be set Only in the case of network errors.
+//         this.code = code;//http code.Null if network error
+//         this.response = response//Reference to the customResponse. Will not be set in network errors.
+//         Error.captureStackTrace(this, CustomError);
+//     }
+// }
 
 module.exports = { request };

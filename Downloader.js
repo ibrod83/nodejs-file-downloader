@@ -148,6 +148,7 @@ module.exports = class Downloader {
    */
   async _request() {
     const response = await this._makeRequest();
+    debugger;
     // const response = await this._makeRequestUntilSuccessful();
     // const response = await this._makeUntilSuccessful(this._makeRequest);
     // this.response = response;
@@ -214,7 +215,7 @@ module.exports = class Downloader {
   async _makeRequest() {
 
     const httpsAgent = this.config.httpsAgent;
-
+    // debugger
     const response = await request(this.config.url, {
       timeout: this.config.timeout,
       headers: this.config.headers,
@@ -251,7 +252,7 @@ module.exports = class Downloader {
     const progress = new Transform({
 
       transform(chunk, encoding, callback) {
-
+        
         that.currentDataSize += chunk.byteLength;
 
         that.percentage = ((that.currentDataSize / that.fileSize) * 100).toFixed(2)
@@ -294,12 +295,13 @@ module.exports = class Downloader {
     // try {
     // debugger;
 
-    if (this.config.onProgress) {
-      const progressStream = this._getProgressStream()
-      return await this._pipeStreams([read, progressStream, write])
-    }
+    // if (this.config.onProgress) {
+      // const progressStream = this._getProgressStream()
+      // return await this._pipeStreams([read, progressStream, write])
+    // }
     debugger;
-    await this._pipeStreams([read, write])
+    const progressStream = this._getProgressStream()
+    await this._pipeStreams([read,progressStream, write])
     // return new Promise((resolve, reject) => {
     //   read.pipe(write)
     //     .on('finish', resolve)

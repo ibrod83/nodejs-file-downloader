@@ -20,15 +20,14 @@
   "author": "ibrod83",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.19.2",
     "mime-types": "^2.1.27",
     "sanitize-filename": "^1.6.3"
   },
   "devDependencies": {
     "@types/jest": "^25.2.2",
-    "axios-mock-adapter": "^1.18.1",
     "expect": "^26.0.1",
     "mocha": "^7.1.2",
+    "nock": "^13.0.4",
     "rimraf": "^3.0.2"
   },
   "homepage": "https://github.com/ibrod83/nodejs-file-downloader",
