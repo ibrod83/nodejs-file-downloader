@@ -2,7 +2,8 @@ const fs = require('fs');
 // const axios = require('axios');
 const { request } = require('./request');
 const stream = require('stream');
-const { Transform, Stream } = require('stream')
+// const {WritableStream}= fs;
+const { Transform } = require('stream')
 const util = require('util');
 const FileProcessor = require('./utils/FileProcessor');
 const pipelinePromisified = util.promisify(stream.pipeline);
@@ -10,7 +11,8 @@ const mkdir = util.promisify(fs.mkdir);
 const writeFile = util.promisify(fs.writeFile);
 const { deduceFileName } = require('./utils/fileName');
 const rpur = require('./utils/rpur');
-const { resolve } = require('path');
+// const { resolve } = require('path');
+// const {IncomingMessage} = require('http')
 const unlink = util.promisify(fs.unlink)
 const rename = util.promisify(fs.rename)
 
@@ -127,35 +129,32 @@ module.exports = class Downloader {
       const response = await this._request();
       // const readStream = response.readStream
       if (this.config.onResponse) {
+        // debugger
         const shouldContinue = await this.config.onResponse(response);
         if (shouldContinue === false) {
           return;
         }
       }
+      // const finalName = await this._getFinalFileName(response.headers);
+      // const finalPath = `${this.config.directory}/${finalName}`;
       await this._save(response)
     })
+    // debugger
 
   }
 
 
- async _verifyDirectoryExists(directory){
+  async _verifyDirectoryExists(directory) {
     await mkdir(directory, { recursive: true });
   }
 
 
   /**
-   * @return {Promise<Stream}>}
+   * @return {Promise<IncomingMessage} response 
    */
   async _request() {
     const response = await this._makeRequest();
-    debugger;
-    // const response = await this._makeRequestUntilSuccessful();
-    // const response = await this._makeUntilSuccessful(this._makeRequest);
-    // this.response = response;
-    // this.readStream = response.readStream;
-    // this.responseHeaders = response.headers;
     // debugger;
-    // this.response = response;
 
     const contentLength = response.headers['content-length'] || response.headers['Content-Length'];
     this.fileSize = parseInt(contentLength);
@@ -164,20 +163,37 @@ module.exports = class Downloader {
   }
 
   /**
-   * @param {Stream}} response
+   * @param {IncomingMessage} response
    * @return {Promise<void>}
    */
   async _save(response) {
-    const finalFileName = await this._getFinalFileName(response.headers);
-    if (this.config.shouldBufferResponse) {
+
+    try {
+      // debugger
+      const finalName = await this._getFinalFileName(response.headers);
+      
+      const finalPath = `${this.config.directory}/${finalName}`;
+
+      var tempPath = this._getTempFilePath(finalPath);
+
+      if (this.config.shouldBufferResponse) {
+        const buffer = await this._createBufferFromResponseStream(response);
+        await this._saveFromBuffer(buffer, tempPath);
+        // await this._saveFromBuffer(buffer, finalPath);
+      }else{
+        await this._saveFromReadableStream(response, tempPath);
+        // await this._saveFromReadableStream(response, finalPath);
+      }
       // debugger;
-      const buffer = await this._createBufferFromResponseStream(response);
-      return this._saveFromBuffer(buffer, finalFileName);
-      // return this._makeUntilSuccessful(async()=>{await this._saveFromBuffer(this.response.data)});
+      await this._renameTempFileToFinalName(tempPath,finalPath)
+      
+    } catch (error) {
+      // debugger
+      await this._removeFailedFile(tempPath)
+      throw error;
     }
-    // debugger;
-    await this._saveFromReadableStream(response, finalFileName);
-    // await this._makeUntilSuccessful(async()=>{await this._saveFromReadableStream(this.response.data)});
+
+
   }
 
 
@@ -197,7 +213,7 @@ module.exports = class Downloader {
       data = await func();
     }, {
       onError: async (e) => {
-        debugger;
+        // debugger;
         if (this.config.onError) {
           await this.config.onError(e);
         }
@@ -210,7 +226,7 @@ module.exports = class Downloader {
   }
   /**
    * 
-   * @return {Promise<{headers:object,readStream:Stream}>}
+   * @return {Promise<IncomingMessage>}
    */
   async _makeRequest() {
 
@@ -220,9 +236,7 @@ module.exports = class Downloader {
       timeout: this.config.timeout,
       headers: this.config.headers,
       httpsAgent,
-      // onTimeout:(()=>{
-      //   console.log('TIMEOUT')
-      // })
+
     });
 
 
@@ -232,7 +246,13 @@ module.exports = class Downloader {
 
 
 
+  /**
+   * 
+   * @param {string} fullPath 
+   * @return {Promie<WritableStream>}
+   */
   _createWriteStream(fullPath) {
+    // debugger
     return fs.createWriteStream(fullPath)
   }
 
@@ -252,7 +272,7 @@ module.exports = class Downloader {
     const progress = new Transform({
 
       transform(chunk, encoding, callback) {
-        
+
         that.currentDataSize += chunk.byteLength;
 
         that.percentage = ((that.currentDataSize / that.fileSize) * 100).toFixed(2)
@@ -278,57 +298,37 @@ module.exports = class Downloader {
 
   async _pipeStreams(arrayOfStreams) {
     // try {
-      await pipelinePromisified(...arrayOfStreams);
+    await pipelinePromisified(...arrayOfStreams);
     // } catch (error) {
-      // debugger;
+    // debugger;
     // }
-    
+
   }
 
 
 
-  async _saveFromReadableStream(read, fileName) {
-
-    const finalPath = `${this.config.directory}/${fileName}`
-    // const tempPath = this._getTempFilePath(finalPath);
-    const write = this._createWriteStream(finalPath)
-    // try {
+  async _saveFromReadableStream(read, path) {
     // debugger;
+    const streams = [read];
+    const write = this._createWriteStream(path)
+    if (this.config.onProgress) {
+      const progressStream = this._getProgressStream()
+      streams.push(progressStream);
 
-    // if (this.config.onProgress) {
-      // const progressStream = this._getProgressStream()
-      // return await this._pipeStreams([read, progressStream, write])
-    // }
-    debugger;
-    const progressStream = this._getProgressStream()
-    await this._pipeStreams([read,progressStream, write])
-    // return new Promise((resolve, reject) => {
-    //   read.pipe(write)
-    //     .on('finish', resolve)
-    //     .on('error', e=>reject(e))
+    }
+    streams.push(write)
+    await this._pipeStreams(streams)
 
-    //   read.on('error', e=>reject(e))
-    // })
-
-    // console.log('dsdsad')
-    // debugger;
-    // await this._renameTempFileToFinalName(tempPath, finalPath)
-    // } catch (error) {
-    // await this._removeFailedFile(tempPath)
-    // throw error
-    // }
 
 
   }
 
 
 
-  async _saveFromBuffer(buffer, fileName) {
-
-    const finalPath = `${this.config.directory}/${fileName}`
-    const tempPath = this._getTempFilePath(finalPath);
-    await writeFile(tempPath, buffer)
-    await this._renameTempFileToFinalName(tempPath, finalPath)
+  async _saveFromBuffer(buffer, path) {
+    // debugger;
+    // const tempPath = this._getTempFilePath(path);
+    await writeFile(path, buffer)
 
   }
 
@@ -337,12 +337,16 @@ module.exports = class Downloader {
   }
 
   async _renameTempFileToFinalName(temp, final) {
-    debugger;
+    // debugger;
     await rename(temp, final)
   }
 
-  _getTempFilePath(path) {
-    return `${path}.download`;
+  /**
+   * 
+   * @param {string} finalpath 
+   */
+  _getTempFilePath(finalpath) {
+    return `${finalpath}.download`;
   }
 
 
@@ -357,8 +361,6 @@ module.exports = class Downloader {
     } else {
       fileName = deduceFileName(this.config.url, responseHeaders)
     }
-
-    // await mkdir(this.config.directory, { recursive: true });
 
     if (this.config.cloneFiles) {
 

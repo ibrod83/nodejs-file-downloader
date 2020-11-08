@@ -102,7 +102,7 @@ If you need to get the underlying response, in order to decide whether the downl
 
 ```javascript
 
-  //The response object is an Axios response object. Refer to their docs for more details.
+  //The response object is a node response(http.IncomingMessage)
   function onResponse(response){
     //Now you can do something with the response, like check the headers
     if(response.headers['content-length'] > 1000000){
