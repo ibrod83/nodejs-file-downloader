@@ -1,4 +1,4 @@
-nodejs-file-downloader is a simple utility for downloading files. It hides the complexity of dealing with streams, paths and duplicate file names. Can automatically repeat failed downloads.
+nodejs-file-downloader is a simple utility for downloading files. It hides the complexity of dealing with streams, redirects, paths and duplicate file names. Can automatically repeat failed downloads.
 
 If you encounter any bugs or have a question, please don't hesitate to open an issue.
 
@@ -142,8 +142,13 @@ The program can repeat any failed downloads automatically. Only if the provided 
         console.log('Error from attempt ',error)
       }        
   })   
+  
+  try {
+    await downloader.dowload();
+  } catch (error) {//If all attempts fail, the last error is thrown.
+    console.log('Final fail',error)
+  }
 
-  await downloader.dowload();
 
 
 ```
