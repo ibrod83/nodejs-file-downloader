@@ -1,16 +1,11 @@
 // const { read } = require('fs');
-const http = require('http');
+// const http = require('http');
+const { http, https } = require('follow-redirects');
 const IncomingMessage = http.IncomingMessage
-const https = require('https');
-// debugger
-// const { Readable } = require('stream');
-// const { once } = require('events');
-// const {get} = require('./httpAdapter')
-// const defaultHeaders = {
-//     // "Accept-Encoding": "gzip,deflate",
-//     // 'User-Agent': "node-fetch/1.0",
-//     // "Accept": "*/*",
-// }
+// const https = require('https');
+// debugger;
+
+
 
 
 /**
@@ -24,8 +19,8 @@ const https = require('https');
  */
 async function request(url, config = {}) {
     // console.log(process.env)
+    let prom=new Promise((resolve, reject) => {
 
-    return new Promise((resolve, reject) => {
         // debugger;
         const { httpsAgent, headers, timeout, } = config;
 
@@ -39,7 +34,7 @@ async function request(url, config = {}) {
 
         const protocol = url.trim().startsWith('https') ? https : http;
         let readStream;
-
+        // debugger;
         const request = protocol.request(url, options, (res) => {
             readStream = res;
             // debugger;
@@ -49,30 +44,56 @@ async function request(url, config = {}) {
             }
             resolve(readStream)
 
-        }).end()
+        })
+            .on('error', (e) => { 
+                // debugger;
+                // console.log(prom)
+                reject(new Error(e.message))
+             })
+           
 
-            .on('error', (e) => { reject(new Error(e.message)) });
+
         // debugger;
-        if (options.timeout) {
-            request.setTimeout(options.timeout, () => {
-                const error = new Error(`Request timed out`)
-                request.destroy(error)
-                reject(error)
-                // console.log('after reject')
-                if (readStream) {
-                    // debugger;
-                    if (parseInt(process.versions.node.split('.')[0]) < 12) {
-                        readStream.emit('error', error);
-                    }
+        // if (options.timeout) {
+        //     debugger;
+        //     request.setTimeout(options.timeout, () => {
+        //         debugger;
+        //         const error = new Error(`Request timed out`)
+        //         request.destroy(error)
+        //         reject(error)
+        //         // console.log('after reject')
+        //         if (readStream) {
+        //             // debugger;
+        //             if (parseInt(process.versions.node.split('.')[0]) < 12) {
+        //                 readStream.emit('error', error);
+        //             }
 
+        //         }
+
+        //     })
+        // }
+        if (options.timeout) {
+            // debugger;
+            request.setTimeout(options.timeout, () => {
+                
+                // debugger;
+                const error = new Error(`Request timed out`)
+                reject(error)
+                request.destroy(error)
+               
+                if (readStream) {
+                    readStream.emit('error', error);
                 }
 
             })
         }
 
+        request.end()
+
 
 
     })
+    return prom;
 }
 
 

@@ -1,6 +1,6 @@
 {
   "name": "nodejs-file-downloader",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "A file downloader for NodeJs",
   "main": "Downloader.js",
   "scripts": {
@@ -20,6 +20,7 @@
   "author": "ibrod83",
   "license": "ISC",
   "dependencies": {
+    "follow-redirects": "^1.13.0",
     "mime-types": "^2.1.27",
     "sanitize-filename": "^1.6.3"
   },

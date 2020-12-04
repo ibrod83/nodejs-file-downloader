@@ -238,6 +238,7 @@ module.exports = class Downloader {
       httpsAgent,
 
     });
+    // debugger;
 
 
 
@@ -317,8 +318,9 @@ module.exports = class Downloader {
 
     }
     streams.push(write)
+    // debugger
     await this._pipeStreams(streams)
-
+    // debugger
 
 
   }
