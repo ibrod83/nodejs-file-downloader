@@ -15,6 +15,7 @@ $ npm install nodejs-file-downloader
   * [Overwrite existing files](#overwrite-existing-files)  
   * [Hook into response](#hook-into-response)  
   * [Repeat failed downloads automatically](#repeat-failed-downloads-automatically)  
+- [Error handling](#error-handling)     
 
 ## Examples
 #### Basic
@@ -26,14 +27,19 @@ const Downloader = require('nodejs-file-downloader');
 
 (async () => {//Wrapping the code with an async function, just for the sake of example.
 
-    const downloader = new Downloader({     
+    const downloader = new Downloader({
       url: 'http://212.183.159.230/200MB.zip',//If the file name already exists, a new file with the name 200MB1.zip is created.     
       directory: "./downloads",//This folder will be created, if it doesn't exist.               
     })
-    
-    await downloader.download();//Downloader.download() returns a promise.
+    try {
+      await downloader.download();//Downloader.download() returns a promise.
 
-    console.log('All done');
+      console.log('All done');
+    } catch (error) {//IMPORTANT: Handle a possible error. An error is thrown in case of network errors, or status codes of 400 and above.
+      //Note that if the maxAttempts is set to higher than 1, the error is thrown only if all attempts fail.
+      console.log('Download failed',error)
+    }
+
 
 })();    
 
@@ -48,17 +54,22 @@ const Downloader = require('nodejs-file-downloader');
 
 (async () => {
 
-   const downloader = new Downloader({     
-      url: 'http://212.183.159.230/200MB.zip',     
-      directory: "./downloads/2020/May",//Sub directories will also be automatically created if they do not exist.  
-      onProgress:function(percentage){//Gets called with each chunk.
-           console.log('% ',percentage)   
-      }         
-    })    
+    const downloader = new Downloader({     
+       url: 'http://212.183.159.230/200MB.zip',     
+       directory: "./downloads/2020/May",//Sub directories will also be automatically created if they do not exist.  
+       onProgress:function(percentage){//Gets called with each chunk.
+            console.log('% ',percentage)   
+       }         
+     })    
     
-    await downloader.download();   
+    try {
+      await downloader.download();   
+    } catch (error) {
+       console.log(error)
+    }
+     
 
-})();    
+})();  
 
 ```
 
@@ -101,25 +112,28 @@ By default, nodejs-file-downloader uses config.cloneFiles = true, which means th
 If you need to get the underlying response, in order to decide whether the download should continue, or perform any other operations, use the onReponse hook.
 
 ```javascript
-
-  //The response object is a node response(http.IncomingMessage)
-  function onResponse(response){
-    //Now you can do something with the response, like check the headers
-    if(response.headers['content-length'] > 1000000){
-      console.log('File is too big!')
-      return false;//If you return false, the download process is stopped, and downloader.download() is resolved.
-    } 
-    
-    //Returning any other value, including undefined, will tell the downloader to proceed as usual.
+//The response object is a node response(http.IncomingMessage)
+function onResponse(response) {
+  //Now you can do something with the response, like check the headers
+  if (response.headers['content-length'] > 1000000) {
+    console.log('File is too big!')
+    return false;//If you return false, the download process is stopped, and downloader.download() is resolved.
   }
 
-  const downloader = new Downloader({     
-      url: 'http://212.183.159.230/200MB.zip',     
-      directory: "./",
-      onResponse        
-  }) 
+  //Returning any other value, including undefined, will tell the downloader to proceed as usual.
+}
 
+const downloader = new Downloader({
+  url: 'http://212.183.159.230/200MB.zip',
+  directory: "./",
+  onResponse
+})
+try {
   await downloader.download()
+} catch (error) {
+  console.log(error)
+}
+
 
 ```
 
@@ -154,3 +168,10 @@ The program can repeat any failed downloads automatically. Only if the provided 
 ```
 
 &nbsp;
+
+## Error handling
+
+downloader.download() should be put within a try-catch block. The program will throw an error, just like Axios, in case of network problems 
+or an http status code of 400 or higher.
+
+If the auto-repeat feature is enabled(by setting the maxAttempts to higher than 1), then only a failure of the final attempt will throw an error. 
