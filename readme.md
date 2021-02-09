@@ -159,7 +159,7 @@ The program can repeat any failed downloads automatically. Only if the provided 
   })   
   
   try {
-    await downloader.dowload();
+    await downloader.download();
   } catch (error) {//If all attempts fail, the last error is thrown.
     console.log('Final fail',error)
   }
