@@ -2,6 +2,8 @@ const fs = require('fs');
 // const axios = require('axios');
 const { request } = require('./request');
 const stream = require('stream');
+var HttpsProxyAgent = require('https-proxy-agent');
+
 // const {WritableStream}= fs;
 const { Transform } = require('stream')
 const util = require('util');
@@ -32,6 +34,10 @@ const configTypes = {
   },
   cloneFiles: {
     type: 'boolean',
+    mandatory: false
+  },
+  proxy: {
+    type: 'string',
     mandatory: false
   }
 };
@@ -66,6 +72,7 @@ module.exports = class Downloader {
    * @param {number} [config.maxAttempts=1] 
    * @param {object} [config.headers = undefined] 
    * @param {object} [config.httpsAgent = undefined] 
+   * @param {string} [config.proxy = undefined] 
    * @param {function} [config.onError = undefined] 
    * @param {function} [config.onResponse = undefined] 
    * @param {function} [config.onProgress = undefined] 
@@ -73,6 +80,7 @@ module.exports = class Downloader {
    * @param {boolean} [config.useSynchronousMode = false] 
    */
   constructor(config) {
+
     // super();
     if (!config || typeof config !== 'object') {
       throw new Error('Must provide a valid config object')
@@ -86,6 +94,7 @@ module.exports = class Downloader {
       maxAttempts: 1,
       useSynchronousMode: false,
       httpsAgent: undefined,
+      proxy:undefined,
       headers: undefined,
       cloneFiles: true,
       shouldBufferResponse: false,
@@ -98,6 +107,8 @@ module.exports = class Downloader {
       ...defaultConfig,
       ...config
     }
+
+    
 
     if (this.config.filename) {
       this.config.fileName = this.config.filename
@@ -171,7 +182,7 @@ module.exports = class Downloader {
     try {
       // debugger
       const finalName = await this._getFinalFileName(response.headers);
-      
+
       const finalPath = `${this.config.directory}/${finalName}`;
 
       var tempPath = this._getTempFilePath(finalPath);
@@ -180,13 +191,13 @@ module.exports = class Downloader {
         const buffer = await this._createBufferFromResponseStream(response);
         await this._saveFromBuffer(buffer, tempPath);
         // await this._saveFromBuffer(buffer, finalPath);
-      }else{
+      } else {
         await this._saveFromReadableStream(response, tempPath);
         // await this._saveFromReadableStream(response, finalPath);
       }
       // debugger;
-      await this._renameTempFileToFinalName(tempPath,finalPath)
-      
+      await this._renameTempFileToFinalName(tempPath, finalPath)
+
     } catch (error) {
       // debugger
       await this._removeFailedFile(tempPath)
@@ -229,15 +240,21 @@ module.exports = class Downloader {
    * @return {Promise<IncomingMessage>}
    */
   async _makeRequest() {
-
-    const httpsAgent = this.config.httpsAgent;
+    const {timeout,headers,proxy,url,httpsAgent} = this.config;
+    const options = {
+      timeout,
+      headers
+    }
+    if(httpsAgent){
+      options.httpsAgent = httpsAgent;
+    }
+    else if(proxy){
+      // debugger
+      options.httpsAgent = new HttpsProxyAgent(proxy)
+    }
     // debugger
-    const response = await request(this.config.url, {
-      timeout: this.config.timeout,
-      headers: this.config.headers,
-      httpsAgent,
-
-    });
+    // console.log(options)
+    const response = await request(url, options);
     // debugger;
 
 

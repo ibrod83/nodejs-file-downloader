@@ -15,6 +15,7 @@ $ npm install nodejs-file-downloader
   * [Overwrite existing files](#overwrite-existing-files)  
   * [Hook into response](#hook-into-response)  
   * [Repeat failed downloads automatically](#repeat-failed-downloads-automatically)  
+  * [Use a Proxy](#use-a-proxy)  
 - [Error handling](#error-handling)     
 
 ## Examples
@@ -163,6 +164,24 @@ The program can repeat any failed downloads automatically. Only if the provided 
     console.log('Final fail',error)
   }
 
+
+
+```
+
+&nbsp;
+
+#### Use a proxy
+
+You can pass a proxy string. Under the hood, this will create a custom httpsAgent. This feature wasn't tested extensively.
+
+
+```javascript
+
+  const downloader = new Downloader({  
+      proxy:"http://username:password@some-proxy.com:22225",   
+      url: 'http://212.183.159.230/200MB.zip',     
+      directory: "./",      
+  })     
 
 
 ```

@@ -25,17 +25,20 @@ async function request(url, config = {}) {
         const { httpsAgent, headers, timeout, } = config;
 
         // debugger;
+        // console.log('headersss',headers)
         const options = {
             headers,
             timeout,
             agent: httpsAgent,
             // onTimeout//Function
         }
+        // debugger;
 
         const protocol = url.trim().startsWith('https') ? https : http;
         let readStream;
         // debugger;
         const request = protocol.request(url, options, (res) => {
+            // debugger;
             readStream = res;
             // debugger;
             if (res.statusCode > 226) {
