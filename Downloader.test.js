@@ -71,7 +71,8 @@ describe('Downloader tests', () => {
 
         // )
         // debugger;
-        nock('http://www.dummyurl.com')
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
             .get('/contentType')
             .reply(200, (uri, requestBody) => {
 
@@ -82,7 +83,7 @@ describe('Downloader tests', () => {
                 'Content-Length': '23642'
             })
         const downloader = new Downloader({
-            url: 'http://www.dummyurl.com/contentType',
+            url: `http://www.${host}.com/contentType`,
             directory: "./downloads",
             cloneFiles: false,
             onProgress: (p, chunk) => {
@@ -106,6 +107,40 @@ describe('Downloader tests', () => {
 
     })
 
+    it('Should get NaN in onProgress', async () => {
+
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
+            .get('/contentType')
+            .reply(200, (uri, requestBody) => {
+
+                return fs.createReadStream(Path.join(__dirname, 'fixtures/Desert.jpg'))
+                //   fs.readFile(Path.join(__dirname, 'fixtures/Desert.jpg'), cb) // Error-first callback
+            }, {
+                'Content-Type': 'image/jpeg',
+            })
+        const downloader = new Downloader({
+            url: `http://www.${host}.com/contentType`,
+            directory: "./downloads",
+            cloneFiles: false,
+            onProgress: (p, chunk,remaining) => {
+                // debugger;
+                expect(isNaN(p)).toBe(true)
+                expect(isNaN(remaining)).toBe(true)
+                expect(Object.getPrototypeOf(chunk).constructor.name).toBe('Buffer')
+            }
+
+        })
+
+        // debugger;
+        await downloader.download();
+        // debugger
+        await verifyFile('./downloads/contentType.jpeg', 23642);
+        //  console.log(verify)
+
+
+    })
+
     it('Should download a picture and overwrite the name', async () => {
         // mock.onGet("/Desert.jpg").reply(
         //     200,
@@ -116,8 +151,8 @@ describe('Downloader tests', () => {
         //     }
 
         // )
-
-        nock('http://www.dummyurl.com')
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
             .get('/Desert.jpg')
             .reply(200, (uri, requestBody) => {
 
@@ -128,7 +163,7 @@ describe('Downloader tests', () => {
                 'Content-Length': '23642'
             })
         const downloader = new Downloader({
-            url: 'http://www.dummyurl.com/Desert.jpg',
+            url: `http://www.${host}.com/Desert.jpg`,
             directory: "./downloads",
             cloneFiles: false,
             fileName: 'alternativeName.jpg'
@@ -153,8 +188,8 @@ describe('Downloader tests', () => {
         //     }
 
         // )
-
-        nock('http://www.dummyurl.com')
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
             .get('/Desert.jpg')
             .reply(200, (uri, requestBody) => {
 
@@ -165,7 +200,7 @@ describe('Downloader tests', () => {
                 'Content-Length': '23642'
             })
         const downloader = new Downloader({
-            url: 'http://www.dummyurl.com/Desert.jpg',
+            url: `http://www.${host}.com/Desert.jpg`,
             directory: "./downloads/May/2020",
             cloneFiles: false
         })
@@ -190,7 +225,8 @@ describe('Downloader tests', () => {
         //     }
 
         // )
-        nock('http://www.dummyurl.com')
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
             .get('/Desert.jpg')
             .reply(200, (uri, requestBody) => {
 
@@ -201,7 +237,7 @@ describe('Downloader tests', () => {
                 'Content-Length': '23642'
             })
         const downloader = new Downloader({
-            url: 'http://www.dummyurl.com/Desert.jpg',
+            url: `http://www.${host}.com/Desert.jpg`,
             directory: "./downloads/May/2020",
             // cloneFiles: true
         })
@@ -226,7 +262,8 @@ describe('Downloader tests', () => {
         //     }
 
         // )
-        nock('http://www.dummyurl.com')
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
             .get('/Koala.jpg')
             .reply(200, (uri, requestBody) => {
 
@@ -237,7 +274,7 @@ describe('Downloader tests', () => {
                 'Content-Length': '845941'
             })
         const downloader = new Downloader({
-            url: 'http://www.dummyurl.com/Koala.jpg',
+            url: `http://www.${host}.com/Koala.jpg`,
             directory: "./downloads",
             // onProgress: (p) => { }
         })
@@ -263,7 +300,8 @@ describe('Downloader tests', () => {
         //     }
 
         // )
-        nock('http://www.dummyurl.com')
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
             .get('/Lighthouse.jpg')
             .reply(200, (uri, requestBody) => {
 
@@ -274,7 +312,7 @@ describe('Downloader tests', () => {
                 'Content-Length': '845941'
             })
         const downloader = new Downloader({
-            url: 'http://www.dummyurl.com/Lighthouse.jpg',
+            url: `http://www.${host}.com/Lighthouse.jpg`,
             directory: "./downloads",
         })
         // .on('progress', (p) => { })
@@ -300,7 +338,8 @@ describe('Downloader tests', () => {
         //     }
 
         // )
-        nock('http://www.dummyurl.com')
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
             .get('/contentDisposition')
             .reply(200, (uri, requestBody) => {
 
@@ -312,7 +351,7 @@ describe('Downloader tests', () => {
                 'Content-Length': '845941'
             })
         const downloader = new Downloader({
-            url: 'http://www.dummyurl.com/contentDisposition',
+            url: `http://www.${host}.com/contentDisposition`,
             directory: "./downloads"
         })
         // .on('progress',(p)=>{})
@@ -339,7 +378,8 @@ describe('Downloader tests', () => {
 
         // )
 
-        nock('http://www.dummyurl.com')
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
             .get('/Hydrangeas.jpg?width=400&height=300')
             .reply(200, (uri, requestBody) => {
 
@@ -351,7 +391,7 @@ describe('Downloader tests', () => {
             })
 
         const downloader = new Downloader({
-            url: 'http://www.dummyurl.com/Hydrangeas.jpg?width=400&height=300',
+            url: `http://www.${host}.com/Hydrangeas.jpg?width=400&height=300`,
             directory: "./downloads"
         })
         // .on('progress', (p) => { })
@@ -378,7 +418,8 @@ describe('Downloader tests', () => {
             //     }
 
             // )
-            nock('http://www.dummyurl.com')
+            const host = randomHost()
+            nock(`http://www.${host}.com`)
                 .get('/Koala.jpg')
                 .reply(200, (uri, requestBody) => {
 
@@ -389,7 +430,7 @@ describe('Downloader tests', () => {
                     'Content-Length': '29051'
                 }).persist()
             const downloader = new Downloader({
-                url: 'http://www.dummyurl.com/Koala.jpg',
+                url: `http://www.${host}.com/Koala.jpg`,
                 directory: "./downloads",
                 cloneFiles: false
             })
@@ -400,7 +441,7 @@ describe('Downloader tests', () => {
             await verifyFile('./downloads/Koala.jpg', 29051);
 
             const downloader2 = new Downloader({
-                url: 'http://www.dummyurl.com/Koala.jpg',
+                url: `http://www.${host}.com/Koala.jpg`,
                 directory: "./downloads",
             })
             //   console.log(downloader)
@@ -439,7 +480,8 @@ describe('Downloader tests', () => {
         //     }
 
         // )
-        nock('http://www.dummyurl.com')
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
             .get('/Koala.jpg')
             .reply(200, (uri, requestBody) => {
 
@@ -452,7 +494,7 @@ describe('Downloader tests', () => {
 
         try {
             const downloader = new Downloader({
-                url: 'http://www.dummyurl.com/Koala.jpg',
+                url: `http://www.${host}.com/Koala.jpg`,
                 directory: "./downloads",
                 cloneFiles: false,
                 fileName: 'buffer.jpeg',
@@ -465,10 +507,10 @@ describe('Downloader tests', () => {
 
         } catch (error) {
             throw error;
-            debugger;
+            // debugger;
 
         } finally {
-            debugger
+            // debugger
             await verifyFile('./downloads/buffer.jpeg', 29051);
         }
 
@@ -481,32 +523,83 @@ describe('Downloader tests', () => {
 
 
 
+        const host = randomHost()
         // mock.onGet("/400").reply(400)
-        nock('http://www.dummyurl.com')
+        nock(`http://www.${host}.com`)
             .get('/400')
             .reply(400).persist()
 
         try {
             var counter = 0;
             const downloader = new Downloader({
-                url: 'http://www.dummyurl.com/400',
+                url: `http://www.${host}.com/400`,
                 directory: "./downloads",
                 maxAttempts: 3,
-                onError:function(){
+                onError: function () {
                     counter++;
+                },
+               
+            })
+            //   console.log(downloader)
+            // debugger;
+            await downloader.download();
+            // await downloader.request();
+            // debugger;
+            // await downloader.save();
+
+            // await verifyFile('./downloads/Koala.jpg', 29051);
+        } catch (error) {
+            // expect(counter).toBe(3)
+            expect(counter).toBe(3)
+            expect(error.message).toBe('Request failed with status code 400')
+            // debugger;
+        }
+
+
+
+
+    })
+
+
+    it('Should repeat fail after first attempt, because of shouldStop hook', async () => {
+
+
+
+        const host = randomHost()
+        // mock.onGet("/400").reply(400)
+        nock(`http://www.${host}.com`)
+            .get('/404')
+            .reply(404).persist()
+
+        try {
+            var counter = 0;
+            const downloader = new Downloader({
+                url: `http://www.${host}.com/404`,
+                directory: "./downloads",
+                maxAttempts: 3,
+                onError: function () {
+                    counter++;
+                },
+                shouldStop:function(e){
+                    debugger
+                    if(e.statusCode && e.statusCode === 404){
+                        return true;
+                      }
                 }
             })
             //   console.log(downloader)
             // debugger;
             await downloader.download();
             // await downloader.request();
-            debugger;
+            // debugger;
             // await downloader.save();
 
             // await verifyFile('./downloads/Koala.jpg', 29051);
         } catch (error) {
-            expect(counter).toBe(3)
-            expect(error.message).toBe('Request failed with status code 400')
+            // expect(counter).toBe(3)
+            expect(counter).toBe(1)
+            expect(error.message).toBe('Request failed with status code 404')
+            expect(error.statusCode).toBe(404)
             // debugger;
         }
 
@@ -521,16 +614,16 @@ describe('Downloader tests', () => {
     it('Should fail once and finally fail', async () => {
 
 
-
+        const host = randomHost()
         // mock.onGet("/500").reply(500);
-        nock('http://www.dummyurl.com')
+        nock(`http://www.${host}.com`)
             .get('/500')
             .reply(500).persist()
         var onErrorCount = 0;
         try {
             const downloader = new Downloader({
                 timeout: 1000,
-                url: 'http://www.dummyurl.com/500',
+                url: `http://www.${host}.com/500`,
                 directory: "./downloads",
                 maxAttempts: 1,
                 onError: (e) => {
@@ -566,21 +659,14 @@ describe('Downloader tests', () => {
 
     it('Should use onResponse to stop download', async function () {
 
-        // const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'));
-        // mock.onGet("/koala.jpg").reply(function (config) {
-        //     return [
-        //         200,
-        //         stream,
-        //         {'message':'terminate'}
-        //     ];
-        // });
 
-        nock('http://www.dummyurl.com')
+        const host = randomHost()
+        fs.unlinkSync('./downloads/Koala.jpg')
+        nock(`http://www.${host}.com`)
             .get('/Koala.jpg')
             .reply(200, (uri, requestBody) => {
 
                 return fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'))
-                //   fs.readFile(Path.join(__dirname, 'fixtures/Desert.jpg'), cb) // Error-first callback
             }, {
                 'message': 'terminate'
             }).persist()
@@ -590,34 +676,35 @@ describe('Downloader tests', () => {
             timeout: 1000,
             // debugMode:true,
             maxAttempts: 4,
-            fileName: 'yoyo',
+            // fileName: 'yoyo',
             onResponse: function (response) {
                 // debugger;
-                if (response.headers['message'] !== 'terminate') {
-                    // return true
+                if (response.headers['message'] === 'terminate') {
+                    return false;//Stop the download
                 }
-                return false;
+                // return true;
             },
-            url: 'http://www.dummyurl.com/Koala.jpg',
+            url: `http://www.${host}.com/Koala.jpg`,
             directory: "./downloads",
 
         })
 
-        try {
-            await downloader.download();
-            // debugger; 
-        } catch (error) {
-            // debugger;
-            throw error
-        }
+        let fileExists= false
+        await downloader.download();
+
 
         try {
-            await verifyFile('./downloads/yoyo', 29051);
+            await verifyFile('./downloads/Koala.jpg', 29051);
+            fileExists = true//Aint supposed to reach this, verifyFile should throw an error.
         } catch (error) {
-            // expect(true).toBe(true)
-            // debugger
-            // return;
+            debugger
+            //The "error" should be caught here, and the test should pass
+            debugger
+
         }
+
+        debugger
+        if(fileExists)throw new Error("Download hasn't stopped")
 
         // throw new Error();
 
@@ -638,11 +725,15 @@ describe('Downloader tests', () => {
         //         {'message':'do not terminate'}
         //     ];
         // });
-
-        nock('http://www.dummyurl.com')
+        // debugger
+        // fs.unlinkSync('./downloads/Koala.jpg')
+        // debugger
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
             .get('/Koala.jpg')
             .reply(200, (uri, requestBody) => {
-
+                // debugger
+                // console.log('YOYO')
                 return fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'))
                 //   fs.readFile(Path.join(__dirname, 'fixtures/Desert.jpg'), cb) // Error-first callback
             }, { 'message': 'do not terminate' }).persist()
@@ -655,23 +746,32 @@ describe('Downloader tests', () => {
             onResponse: function (response) {
                 if (response.headers['message'] !== 'terminate') {
                     // return true
-                    debugger;
+                    // debugger;
                     return;
-                   
+
                 }
-                debugger
+                // debugger
                 return false;
             },
-            url: 'http://www.dummyurl.com/Koala.jpg',
+            fileName:'yoyo.jpg',
+            url: `http://www.${host}.com/Koala.jpg`,
             directory: "./downloads",
 
         })
 
 
-        const prom = await downloader.download();
-        debugger;
+
+        // debugger;
         // try {
-        await verifyFile('./downloads/koala.jpg', 29051);
+        try {
+            const prom = await downloader.download();
+        } catch (error) {
+            debugger
+        } finally {
+            // debugger
+            await verifyFile('./downloads/yoyo.jpg', 29051);
+        }
+
         // } catch (error) {
         // debugger
         // return;
@@ -684,6 +784,59 @@ describe('Downloader tests', () => {
 
 
     })
+
+    // it('Should fail three times, then succeed', async function () {
+
+    //     try {
+    //         let counter = 0
+
+    //         var onErrorCount = 0
+    //         const host = randomHost()
+    //         nock(`http://www.${host}.com`)
+    //             .get('/Koala.jpg')
+    //             .reply(function (uri, requestBody) {
+    //                 debugger
+    //                 counter++
+    //                 const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'));
+    //                 const code = counter <= 3 ? 500 : 200; 
+    //                 return [
+    //                     code,
+    //                     stream,
+    //                     {}
+    //                 ];
+    //             })
+    //             .persist()
+    //             // .reply(500)
+
+    //         const downloader = new Downloader({
+    //             // timeout: 1000,
+    //             maxAttempts: 4,
+    //             url: `http://www.${host}.com/Koala.jpg`,
+    //             directory: "./downloads",
+    //             onError: function (e) {
+    //                 debugger;
+    //                 onErrorCount++;
+    //             },
+    //             onProgress:(p)=>{
+    //               debugger
+    //                 console.log(p)
+    //             }
+    //         })
+
+    //         await downloader.download();
+
+
+    //     } catch (error) {
+    //         debugger;
+    //     } finally {
+    //         debugger;
+    //         expect(onErrorCount).toBe(4)
+    //     }
+
+    // })
+
+
+
 
     // it('Should fail three times during stream, and then succeed', async function () {
     //     // this.timeout(10000)
@@ -720,22 +873,27 @@ describe('Downloader tests', () => {
     //         let counter = 0
 
     //         var onErrorCount = 0
-
-    //         nock('http://www.dummyurl.com')
+    //         const host = randomHost()
+    //         nock(`http://www.${host}.com`)
     //             .get('/Koala.jpg')
     //             .reply(function(uri, requestBody) {
     //                 const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'));
+    //                 // stream.emit('error')
+    //                 // stream.emit('close')
     //                 const modifiedStream = Readable.from((async function* () {
     //                     counter++
     //                     debugger;
+    //                     // await timeout(1000);
+    //                     debugger
     //                     // if (counter === 4) {
-    //                     //     for await (const chunk of stream) {
-    //                     //         yield chunk;
+    //                         for await (const chunk of stream) {
+    //                             await timeout(1000);
+    //                             yield chunk;
 
-    //                     //     }
+    //                         }
     //                     // } else {
-    //                         debugger;
-    //                         throw new Error('LOL');
+    //                         // debugger;
+    //                         // throw new Error('LOL');
     //                         // modifiedStream.emit('error','yoyo')
     //                     // }
 
@@ -745,13 +903,14 @@ describe('Downloader tests', () => {
     //                 return [
     //                     200,
     //                     modifiedStream,
+    //                     // stream,
     //                     {}
     //                 ];
     //             })
     //             .persist()
     //         let error;
     //         const downloader = new Downloader({
-    //             timeout: 1000,
+    //             timeout: 500,
     //             // debugMode:true,
     //             maxAttempts: 1,
     //             // onResponse:function(r){
@@ -760,7 +919,7 @@ describe('Downloader tests', () => {
     //             //         return false
     //             //     }
     //             // },
-    //             url: 'http://www.dummyurl.com/Koala.jpg',
+    //             url: `http://www.${host}.com/Koala.jpg`,
     //             directory: "./downloads",
     //             onError: function (e) {
     //                 debugger;
@@ -801,78 +960,97 @@ describe('Downloader tests', () => {
 
 
 
-     // it('Should fail twice and finally succeed', async () => {
-    //     const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'));
+// it('Should fail twice and finally succeed', async () => {
+//     const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'));
 
-    //     let counter = 0;
-    //     // mock.onGet("http://www.dummyurl.com/400").reply(function (config) {
-    //     //     // debugger;
-    //     //     let status;
-    //     //     counter++
-    //     //     if (counter < 3) {
-    //     //         status = 400
-    //     //     } else {
-    //     //         status = 200
-    //     //     }
-    //     //     return [
-    //     //         status,
-    //     //         stream,
-    //     //         { 'Content-Type': 'image/jpeg' }
-    //     //     ];
-    //     // });
-    //     nock('http://www.dummyurl.com')
-    //             .get('/400')
-    //             .reply(200, (uri, requestBody) => {
+//     let counter = 0;
+//     // mock.onGet("http://www.${host}.com/400").reply(function (config) {
+//     //     // debugger;
+//     //     let status;
+//     //     counter++
+//     //     if (counter < 3) {
+//     //         status = 400
+//     //     } else {
+//     //         status = 200
+//     //     }
+//     //     return [
+//     //         status,
+//     //         stream,
+//     //         { 'Content-Type': 'image/jpeg' }
+//     //     ];
+//     // });
+//     nock(`http://www.${host}.com`)
+//             .get('/400')
+//             .reply(200, (uri, requestBody) => {
 
-    //             }, {
-    //                 'Content-Type': 'image/jpeg',
-    //                 'Content-Length': '29051'
-    //             })
+//             }, {
+//                 'Content-Type': 'image/jpeg',
+//                 'Content-Length': '29051'
+//             })
 
-    //     try {
-    //         var onErrorCount = 0
+//     try {
+//         var onErrorCount = 0
 
-    //         const downloader = new Downloader({
-    //             timeout: 1000,
-    //             url: 'http://www.dummyurl.com/400',
-    //             directory: "./downloads",
-    //             maxAttempts: 3,
-    //             onError: (e) => {
-    //                 // debugger;
-    //                 onErrorCount++;
-    //                 // console.log(e.message)
-    //             }
+//         const downloader = new Downloader({
+//             timeout: 1000,
+//             url: 'http://www.${host}.com/400',
+//             directory: "./downloads",
+//             maxAttempts: 3,
+//             onError: (e) => {
+//                 // debugger;
+//                 onErrorCount++;
+//                 // console.log(e.message)
+//             }
 
-    //         })
-    //         //   console.log(downloader)
-    //         // debugger;
-    //         // var onErrorCount = 0
-    //         // downloader.on('error', (e) => {
-    //         //     debugger;
-    //         //     onErrorCount++;
-    //         //     // console.log(e.message)
-    //         // })
-    //         await downloader.download();
-    //         // const request = await downloader.request()
-    //         // debugger;
-    //         // await downloader.save()
-    //         // debugger;
-    //         // var s = request.data;
-    //         // debugger;
-
-
-
-    //     } catch (error) {
-    //         debugger;
-    //     } finally {
-    //         debugger;
-    //         // expect(s.constructor.name).toBe('ReadStream')
-    //         expect(onErrorCount).toBe(2)
-    //         await verifyFile('./downloads/400.jpeg', 29051);
-    //     }
+//         })
+//         //   console.log(downloader)
+//         // debugger;
+//         // var onErrorCount = 0
+//         // downloader.on('error', (e) => {
+//         //     debugger;
+//         //     onErrorCount++;
+//         //     // console.log(e.message)
+//         // })
+//         await downloader.download();
+//         // const request = await downloader.request()
+//         // debugger;
+//         // await downloader.save()
+//         // debugger;
+//         // var s = request.data;
+//         // debugger;
 
 
 
+//     } catch (error) {
+//         debugger;
+//     } finally {
+//         debugger;
+//         // expect(s.constructor.name).toBe('ReadStream')
+//         expect(onErrorCount).toBe(2)
+//         await verifyFile('./downloads/400.jpeg', 29051);
+//     }
 
-    // })
 
+
+
+// })
+
+
+
+function randomHost(length = 5) {
+    var result = '';
+    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var charactersLength = characters.length;
+    for (var i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+}
+
+function timeout(mil) {
+    return new Promise((res) => {
+        setTimeout(() => {
+            res();
+        }, mil)
+    })
+}

@@ -43,7 +43,9 @@ async function request(url, config = {}) {
             // debugger;
             if (res.statusCode > 226) {
                 res.resume();
-                return reject(new Error(`Request failed with status code ${res.statusCode}`))
+                const error = new Error(`Request failed with status code ${res.statusCode}`)
+                error.statusCode  = res.statusCode
+                return reject(error)
             }
             resolve(readStream)
 

@@ -15,6 +15,7 @@ $ npm install nodejs-file-downloader
   * [Overwrite existing files](#overwrite-existing-files)  
   * [Hook into response](#hook-into-response)  
   * [Repeat failed downloads automatically](#repeat-failed-downloads-automatically)  
+  * [Prevent unnecessary repetition](#prevent-unnecessary-repetition)  
   * [Use a Proxy](#use-a-proxy)  
 - [Error handling](#error-handling)     
 
@@ -50,6 +51,8 @@ const Downloader = require('nodejs-file-downloader');
 
 #### Get the progress of a download
 
+If the response headers contain information about the file size, onProgress hook can be used. If the file size cannot be determined, "percentage" and "remainingSize" arguments will be called with NaN.
+
 ```javascript
 const Downloader = require('nodejs-file-downloader');
 
@@ -58,8 +61,10 @@ const Downloader = require('nodejs-file-downloader');
     const downloader = new Downloader({     
        url: 'http://212.183.159.230/200MB.zip',     
        directory: "./downloads/2020/May",//Sub directories will also be automatically created if they do not exist.  
-       onProgress:function(percentage){//Gets called with each chunk.
+       onProgress:function(percentage,chunk,remainingSize){//Gets called with each chunk.
             console.log('% ',percentage)   
+            console.log('Current chunk of data: ',chunk)   
+            console.log('Remaining bytes: ',remainingSize)   
        }         
      })    
     
@@ -170,6 +175,41 @@ The program can repeat any failed downloads automatically. Only if the provided 
 
 &nbsp;
 
+#### Prevent unnecessary repetition
+
+If you use the auto-repeat option, by setting the maxAttempts to greater than 1, "shouldStop" hook can be used, To decide
+whether the repetition should continue. This is useful in cases where you're generating many dynamic url's, some of which can result in a 404 http status code(for example), and there is no point in repeating that request.
+
+
+```javascript
+
+  const downloader = new Downloader({     
+      url: 'http://212.183.159.230/200MB.zip',     
+      directory: "./",
+      maxAttempts:3,//We set it to 3, but in the case of status code 404, it will run only once.
+      shouldStop:function(error){
+        //A request that results in a status code of 400 and above, will throw an Error, that contains a custom property
+        //"statusCode".
+
+        //Note that an error that is thrown during the stream itself(after a valid http response was already received. It's quite rare, but happens), will not have a "statusCode" property.
+        if(e.statusCode && e.statusCode === 404){
+            return true;//If you return true, the repetition will not happen. Returning anything else, including undefined, will let the downloader know that you want to continue repeating.
+         }
+      }        
+  })   
+  
+  try {
+    await downloader.download();
+  } catch (error) {//If all attempts fail, the last error is thrown.
+    console.log('Final fail',error)
+  }
+
+
+
+```
+
+&nbsp;
+
 #### Use a proxy
 
 You can pass a proxy string. Under the hood, this will create a custom httpsAgent. This feature wasn't tested extensively.
@@ -190,7 +230,7 @@ You can pass a proxy string. Under the hood, this will create a custom httpsAgen
 
 ## Error handling
 
-downloader.download() should be put within a try-catch block. The program will throw an error, just like Axios, in case of network problems 
+downloader.download() will throw an error, just like Axios, in case of network problems 
 or an http status code of 400 or higher.
 
 If the auto-repeat feature is enabled(by setting the maxAttempts to higher than 1), then only a failure of the final attempt will throw an error. 

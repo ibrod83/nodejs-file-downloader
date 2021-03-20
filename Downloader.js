@@ -76,6 +76,7 @@ module.exports = class Downloader {
    * @param {function} [config.onError = undefined] 
    * @param {function} [config.onResponse = undefined] 
    * @param {function} [config.onProgress = undefined] 
+   * @param {function} [config.shouldStop = undefined] 
    * @param {boolean} [config.shouldBufferResponse = false] 
    * @param {boolean} [config.useSynchronousMode = false] 
    */
@@ -94,7 +95,7 @@ module.exports = class Downloader {
       maxAttempts: 1,
       useSynchronousMode: false,
       httpsAgent: undefined,
-      proxy:undefined,
+      proxy: undefined,
       headers: undefined,
       cloneFiles: true,
       shouldBufferResponse: false,
@@ -108,7 +109,7 @@ module.exports = class Downloader {
       ...config
     }
 
-    
+
 
     if (this.config.filename) {
       this.config.fileName = this.config.filename
@@ -118,7 +119,7 @@ module.exports = class Downloader {
     // this.buffer = null;
     // this.responseHeaders = null;
     // this.response = null;
-
+    this.percentage = 0;
     this.fileSize = null;
     this.currentDataSize = 0;
 
@@ -137,6 +138,7 @@ module.exports = class Downloader {
   async download() {
     await this._verifyDirectoryExists(this.config.directory)
     await this._makeUntilSuccessful(async () => {
+      this._resetData()
       const response = await this._request();
       // const readStream = response.readStream
       if (this.config.onResponse) {
@@ -159,11 +161,18 @@ module.exports = class Downloader {
     await mkdir(directory, { recursive: true });
   }
 
+  _resetData() {
+    this.percentage = 0;
+    this.fileSize = null;
+    this.currentDataSize = 0;
+  }
+
 
   /**
    * @return {Promise<IncomingMessage} response 
    */
   async _request() {
+    // this.resetData()
     const response = await this._makeRequest();
     // debugger;
 
@@ -229,6 +238,15 @@ module.exports = class Downloader {
           await this.config.onError(e);
         }
       },
+      shouldStop: async (e) => {
+        // debugger
+        if (this.config.shouldStop) {
+          if (await this.config.shouldStop(e) === true) {
+            return true;
+          }
+        }
+
+      },
       maxAttempts: this.config.maxAttempts
     })
     return data;
@@ -240,24 +258,20 @@ module.exports = class Downloader {
    * @return {Promise<IncomingMessage>}
    */
   async _makeRequest() {
-    const {timeout,headers,proxy,url,httpsAgent} = this.config;
+    const { timeout, headers, proxy, url, httpsAgent } = this.config;
     const options = {
       timeout,
       headers
     }
-    if(httpsAgent){
+    if (httpsAgent) {
       options.httpsAgent = httpsAgent;
     }
-    else if(proxy){
+    else if (proxy) {
       // debugger
       options.httpsAgent = new HttpsProxyAgent(proxy)
     }
-    // debugger
-    // console.log(options)
-    const response = await request(url, options);
-    // debugger;
 
-
+    var response = await request(url, options);
 
     return response;
   }
@@ -292,11 +306,18 @@ module.exports = class Downloader {
       transform(chunk, encoding, callback) {
 
         that.currentDataSize += chunk.byteLength;
+        if (that.fileSize) {
+          that.percentage = ((that.currentDataSize / that.fileSize) * 100).toFixed(2)
+        } else {
+          that.percentage = NaN
+        }
 
-        that.percentage = ((that.currentDataSize / that.fileSize) * 100).toFixed(2)
+        const remainingFracture = (100 - that.percentage) / 100;
+        const remainingSize = Math.round(remainingFracture * that.fileSize);
+
 
         if (that.config.onProgress) {
-          that.config.onProgress(that.percentage, chunk);
+          that.config.onProgress(that.percentage, chunk, remainingSize);
         }
 
         // Push the data onto the readable queue.
