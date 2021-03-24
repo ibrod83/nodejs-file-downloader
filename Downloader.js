@@ -75,6 +75,7 @@ module.exports = class Downloader {
    * @param {string} [config.proxy = undefined] 
    * @param {function} [config.onError = undefined] 
    * @param {function} [config.onResponse = undefined] 
+   * @param {function} [config.onBeforeSave = undefined] 
    * @param {function} [config.onProgress = undefined] 
    * @param {function} [config.shouldStop = undefined] 
    * @param {boolean} [config.shouldBufferResponse = false] 
@@ -100,6 +101,7 @@ module.exports = class Downloader {
       cloneFiles: true,
       shouldBufferResponse: false,
       onResponse: undefined,
+      onBeforeSave: undefined,
       onError: undefined,
       onProgress: undefined
     }
@@ -190,7 +192,15 @@ module.exports = class Downloader {
 
     try {
       // debugger
-      const finalName = await this._getFinalFileName(response.headers);
+      let finalName = await this._getFinalFileName(response.headers);
+
+      if(this.config.onBeforeSave){
+        // debugger
+        const clientOverideName = await this.config.onBeforeSave(finalName)
+        if(clientOverideName && typeof clientOverideName === 'string'){
+          finalName  = clientOverideName;
+        }
+      }
 
       const finalPath = `${this.config.directory}/${finalName}`;
 

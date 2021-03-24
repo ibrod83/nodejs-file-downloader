@@ -11,6 +11,7 @@ $ npm install nodejs-file-downloader
 - [Examples](#examples)     
   * [Basic](#basic)  
   * [Get the progress of a download](#get-the-progress-of-a-download)  
+  * [Get the deduced file name and override it](#get-the-deduced-file-name-and-override-it)  
   * [Custom file name](#custom-file-name)  
   * [Overwrite existing files](#overwrite-existing-files)  
   * [Hook into response](#hook-into-response)  
@@ -80,6 +81,28 @@ const Downloader = require('nodejs-file-downloader');
 ```
 
 &nbsp;
+
+#### Get the deduced file name and override it
+
+If you haven't supplied a "fileName" config property, the program will try its best to choose the most appropriate name for the file(from the URL, headers, etc). In case you wish to know the name that was chosen, before the file is actually saved, use the onBeforeSave hook, which is called with the deduced name. 
+If you're "unhappy" with the name, it can be overridden by returning a new string. Returning anything else(including undefined/void), will
+let the program know that it can keep the name.
+
+```javascript
+
+  const downloader = new Downloader({     
+      url: 'http://212.183.159.230/200MB.zip',     
+      directory: "./downloads/2020/May",
+      onBeforeSave:(deducedName)=>{
+        console.log(`The file name is: ${deducedName}`)
+        //If you return a string here, it will be used as the name(that includes the extension!).
+      }         
+  }) 
+
+```
+
+&nbsp;
+
 
 #### Custom file name
 

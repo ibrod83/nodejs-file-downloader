@@ -73,7 +73,7 @@ describe('Downloader tests', () => {
         // debugger;
         const host = randomHost()
         nock(`http://www.${host}.com`)
-            .get('/contentType')
+            .get('/contentType1')
             .reply(200, (uri, requestBody) => {
 
                 return fs.createReadStream(Path.join(__dirname, 'fixtures/Desert.jpg'))
@@ -83,7 +83,7 @@ describe('Downloader tests', () => {
                 'Content-Length': '23642'
             })
         const downloader = new Downloader({
-            url: `http://www.${host}.com/contentType`,
+            url: `http://www.${host}.com/contentType1`,
             directory: "./downloads",
             cloneFiles: false,
             onProgress: (p, chunk) => {
@@ -101,7 +101,73 @@ describe('Downloader tests', () => {
         // debugger;
         await downloader.download();
         // debugger
+        await verifyFile('./downloads/contentType1.jpeg', 23642);
+        //  console.log(verify)
+
+
+    })
+
+    it('Should get the deduced name', async () => {
+        let deducedName;
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
+            .get('/contentType')
+            .reply(200, (uri, requestBody) => {
+
+                return fs.createReadStream(Path.join(__dirname, 'fixtures/Desert.jpg'))
+                //   fs.readFile(Path.join(__dirname, 'fixtures/Desert.jpg'), cb) // Error-first callback
+            }, {
+                'Content-Type': 'image/jpeg',
+                'Content-Length': '23642'
+            })
+        const downloader = new Downloader({
+            url: `http://www.${host}.com/contentType`,
+            directory: "./downloads",
+            cloneFiles: false,
+            onBeforeSave:(name)=>{
+                deducedName = name;
+                // return 'yoyoyoy'
+            }
+        })
+
+        // debugger;
+        await downloader.download();
+        expect(deducedName).toBe('contentType.jpeg')
+        // debugger
         await verifyFile('./downloads/contentType.jpeg', 23642);
+        //  console.log(verify)
+
+
+    })
+
+    it('Should override the deduced name', async () => {
+        let deducedName;
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
+            .get('/contentType')
+            .reply(200, (uri, requestBody) => {
+
+                return fs.createReadStream(Path.join(__dirname, 'fixtures/Desert.jpg'))
+                //   fs.readFile(Path.join(__dirname, 'fixtures/Desert.jpg'), cb) // Error-first callback
+            }, {
+                'Content-Type': 'image/jpeg',
+                'Content-Length': '23642'
+            })
+        const downloader = new Downloader({
+            url: `http://www.${host}.com/contentType`,
+            directory: "./downloads",
+            cloneFiles: false,
+            onBeforeSave:(name)=>{
+                deducedName = name;
+                return 'override.jpg'
+            }
+        })
+
+        // debugger;
+        await downloader.download();
+        expect(deducedName).toBe('contentType.jpeg')
+        // debugger
+        await verifyFile('./downloads/override.jpg', 23642);
         //  console.log(verify)
 
 
