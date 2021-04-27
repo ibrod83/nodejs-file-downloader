@@ -1,3 +1,4 @@
+const { http, https } = require('follow-redirects');
 module.exports = class Request {
 
     /**
@@ -8,26 +9,37 @@ module.exports = class Request {
      * @param {number} [config.timeout] 
      * @param {httpsAgent} [config.agent]   
      */
-    constructor(url,config) {
-        this._nativeRequest = null;
+    constructor(url, config) {
+
+
+        this._config = {}
         this._config.url = url;
         this._config.httpsAgent = config.httpsAgent;
         this._config.timeout = config.timeout;
         this._config.headers = config.headers;
 
 
-        this.responseStream = null;        
+        this.nativeRequest = null;//ClientRequest
+        this.responseStream = null;//IncomingMessage
 
     }
     async perform() {
-        const { httpsAgent, headers, timeout, } = this._config; 
-        const {request,response} = await this._makeRequest(this._url,{ httpsAgent, headers, timeout, } )
+        // debugger
+        const { httpsAgent, headers, timeout, } = this._config;
+        const { request, response } = await this._makeRequest(this._config.url, { httpsAgent, headers, timeout, })
+        // debugger
+        this.nativeRequest = request;
+        this.responseStream = response;
     }
 
-    cancel() { }
+    cancel() {
+        if (this.nativeRequest)
+            this.nativeRequest.abort();
+    }
 
     async _makeRequest(url, config = {}) {
         // console.log(process.env)
+        // debugger
         let request;
         let prom = new Promise((resolve, reject) => {
 
@@ -48,8 +60,13 @@ module.exports = class Request {
             let readStream;
             // debugger;
             request = protocol.request(url, options, (res) => {
+                
                 // debugger;
                 readStream = res;
+                readStream.on('aborted',(e)=>{
+                    console.log(e)
+                    debugger
+                })
                 // debugger;
                 if (res.statusCode > 226) {
                     res.resume();
@@ -58,7 +75,7 @@ module.exports = class Request {
                     return reject(error)
                 }
                 resolve({
-                    request, response: readStream
+                    request: request._currentRequest, response: readStream
                 })
 
             })
@@ -68,39 +85,19 @@ module.exports = class Request {
                     reject(new Error(e.message))
                 })
 
-
-
-            // debugger;
-            // if (options.timeout) {
-            //     debugger;
-            //     request.setTimeout(options.timeout, () => {
-            //         debugger;
-            //         const error = new Error(`Request timed out`)
-            //         request.destroy(error)
-            //         reject(error)
-            //         // console.log('after reject')
-            //         if (readStream) {
-            //             // debugger;
-            //             if (parseInt(process.versions.node.split('.')[0]) < 12) {
-            //                 readStream.emit('error', error);
-            //             }
-
-            //         }
-
-            //     })
-            // }
             if (options.timeout) {
-                // debugger;
+
                 request.setTimeout(options.timeout, () => {
-                    console.log(request.destroy)
-                    // debugger;
+
                     const error = new Error(`Request timed out`)
                     reject(error)
+                    debugger
                     request.destroy(error)
 
                     if (readStream) {
                         readStream.emit('error', error);
                     }
+                    
 
                 })
             }

@@ -102,6 +102,8 @@ module.exports = class Downloader {
       this.config.fileName = this.config.filename
     }
 
+    this._currentDownload = null;
+
   }
 
   //For EventEmitter backwards compatibility
@@ -109,35 +111,63 @@ module.exports = class Downloader {
     this.config[`on${capitalize(event)}`] = callback
   }
 
-  
+
 
   /**
-  * @return {Promise<void>}
+  * @return {Object}
   */
-  download() {
+  // download() {
+  //   const that = this;
+  //   const {url,directory,fileName,cloneFiles,timeout,headers,httpsAgent,proxy,onResponse,onBeforeSave,onProgress,shouldBufferResponse,useSynchronousMode} = that.config;
+  //   return {
+  //     async then(fulfilled, rejected) {
+  //       try {
+
+  //         await that._makeUntilSuccessful(async () => {
+
+  //           const download = new Download({url,directory,fileName,cloneFiles,timeout,headers,httpsAgent,proxy,onResponse,onBeforeSave,onProgress,shouldBufferResponse,useSynchronousMode});
+  //           this._currentDownload = download
+  //           // setTimeout(()=>{
+  //           //   download.cancel();
+  //           // },2000)
+  //           await download.start();
+  //           fulfilled()
+  //         })
+  //       } catch (error) {
+  //         // console.log('ERROR',error)
+  //         rejected(error)
+  //       }
+
+  //     },
+  //     cancel(){
+  //       if(this._currentDownload){
+  //         this._currentDownload.cancel();
+  //       }
+  //     }
+
+  //   }
+
+  //   // debugger
+
+  // }
+
+  /**
+   * @return {Promise<void>}
+   */
+  async download() {
     const that = this;
-    const {url,directory,fileName,cloneFiles,timeout,headers,httpsAgent,proxy,onResponse,onBeforeSave,onProgress,shouldBufferResponse,useSynchronousMode} = that.config;
-    return {
-      async then(fulfilled, rejected) {
-        try {
-        
-          await that._makeUntilSuccessful(async () => {
-            const download = new Download({url,directory,fileName,cloneFiles,timeout,headers,httpsAgent,proxy,onResponse,onBeforeSave,onProgress,shouldBufferResponse,useSynchronousMode});
-            // setTimeout(()=>{
-            //   download.cancel();
-            // },1000)
-            await download.start();
-            fulfilled()
-          })
-        } catch (error) {
-          // console.log('ERROR',error)
-          rejected(error)
-        }
+    const { url, directory, fileName, cloneFiles, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode } = that.config;
 
-      }
+    await that._makeUntilSuccessful(async () => {
 
-    }
-
+      const download = new Download({ url, directory, fileName, cloneFiles, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode });
+      this._currentDownload = download
+      // setTimeout(()=>{
+      //   download.cancel();
+      // },2000)
+      await download.start();
+      
+    })
     // debugger
 
   }
@@ -146,7 +176,7 @@ module.exports = class Downloader {
    * @param {Function} asyncFunc
    * @return {Promise<any>} 
    */
-   async _makeUntilSuccessful(asyncFunc) {
+  async _makeUntilSuccessful(asyncFunc) {
 
     let data;
     // debugger;
@@ -175,6 +205,11 @@ module.exports = class Downloader {
     return data;
 
 
+  }
+
+  cancel(){
+    // throw new Error('USER_CANCELLED')
+    this._currentDownload.cancel();
   }
 
 

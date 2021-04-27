@@ -1,5 +1,7 @@
 const fs = require('fs');
-const { request:performRequest } = require('./request2');
+// const { request:performRequest } = require('./request2');
+// const { request:performRequest } = require('./request');
+const Request = require('./Request');
 const stream = require('stream');
 var HttpsProxyAgent = require('https-proxy-agent');
 const {capitalize} = require('./utils/string')
@@ -61,8 +63,8 @@ module.exports = class Download {
         this.percentage = 0;
         this.fileSize = null;
         this.currentDataSize = 0;
-        this.response = null;
-        this.request = null;
+        this.response = null;//The IncomingMessage read stream.
+        this.request = null;//Request wrapper
 
 
     }
@@ -81,14 +83,14 @@ module.exports = class Download {
         await this._verifyDirectoryExists(this.config.directory)
 
 
-        const {response,request} = await this._request();
-        this.response = response;
+        const request = await this._request();
+        this.response = request.responseStream;
         this.request = request;
         debugger
         // const readStream = response.readStream
         if (this.config.onResponse) {
             // debugger
-            const shouldContinue = await this.config.onResponse(response);
+            const shouldContinue = await this.config.onResponse(this.response);
             if (shouldContinue === false) {
                 return;
                 // fulfilled();
@@ -96,7 +98,7 @@ module.exports = class Download {
         }
         // const finalName = await this._getFinalFileName(response.headers);
         // const finalPath = `${this.config.directory}/${finalName}`;
-        await this._save(response)
+        await this._save(this.response)
     }
 
     // debugger
@@ -111,16 +113,17 @@ module.exports = class Download {
 
 
     /**
-     * @return {Promise<IncomingMessage} response 
+     * @return {Promise<Request} Request 
      */
     async _request() {
         // this.resetData()
-        const {response,request} = await this._makeRequest();
-        
-
-        const contentLength = response.headers['content-length'] || response.headers['Content-Length'];
+        const request = await this._makeRequest();
+        // debugger
+        const headers = request.responseStream.headers;
+        // debugger
+        const contentLength = headers['content-length'] || headers['Content-Length'];
         this.fileSize = parseInt(contentLength);
-        return {response,request};
+        return request
 
     }
 
@@ -172,7 +175,7 @@ module.exports = class Download {
 
     /**
      * 
-     * @return {Promise<IncomingMessage>}
+     * @return {Promise<Request>}
      */
     async _makeRequest() {
         const { timeout, headers, proxy, url, httpsAgent } = this.config;
@@ -189,9 +192,13 @@ module.exports = class Download {
         }
         // debugger
 
-        const {response,request} = await performRequest(url, options);
+        // const {response,request} = await performRequest(url, options);
+        const request = new Request(url,options)
+        await request.perform();
+        // const {response,request} = await performRequest(url, options);
         // debugger
-        return {response,request};
+        // return {response,request};
+        return request;
     }
 
 
@@ -255,7 +262,13 @@ module.exports = class Download {
 
     async _pipeStreams(arrayOfStreams) {
         // try {
-        await pipelinePromisified(...arrayOfStreams);
+            try {
+               await pipelinePromisified(...arrayOfStreams); 
+            } catch (error) {
+                debugger
+                throw error
+            }
+        
         // } catch (error) {
         // debugger;
         // }
@@ -333,7 +346,7 @@ module.exports = class Download {
 
     async cancel() {
         debugger
-        this.request.abort();
+        this.request.cancel();
      }
 }
 
