@@ -1,11 +1,11 @@
 const fs = require('fs');
-// const { request:performRequest } = require('./request2');
-// const { request:performRequest } = require('./request');
-const Request = require('./Request');
+const abort = require('./utils/abort')
+const http = require('http')//For jsdoc
+const IncomingMessage = http.IncomingMessage
+const ClientRequest = http.ClientRequest
+const { request: makeRequest } = require('./request');
 const stream = require('stream');
 var HttpsProxyAgent = require('https-proxy-agent');
-const {capitalize} = require('./utils/string')
-// const {WritableStream}= fs;
 const { Transform } = require('stream')
 const util = require('util');
 const FileProcessor = require('./utils/FileProcessor');
@@ -13,7 +13,6 @@ const pipelinePromisified = util.promisify(stream.pipeline);
 const mkdir = util.promisify(fs.mkdir);
 const writeFile = util.promisify(fs.writeFile);
 const { deduceFileName } = require('./utils/fileName');
-
 const unlink = util.promisify(fs.unlink)
 const rename = util.promisify(fs.rename)
 
@@ -60,19 +59,17 @@ module.exports = class Download {
         }
 
 
+        this.isCancelled = false;
         this.percentage = 0;
         this.fileSize = null;
         this.currentDataSize = 0;
         this.response = null;//The IncomingMessage read stream.
-        this.request = null;//Request wrapper
+        this.request = null;//ClientRequest 
 
 
     }
 
-    //For EventEmitter backwards compatibility
-    on(event, callback) {
-        this.config[`on${capitalize(event)}`] = callback
-    }
+
 
 
     /**
@@ -82,23 +79,30 @@ module.exports = class Download {
 
         await this._verifyDirectoryExists(this.config.directory)
 
+        try {
+            const { response, request } = await this._request();
+            this.response = response;
+            this.request = request;
 
-        const request = await this._request();
-        this.response = request.responseStream;
-        this.request = request;
-        debugger
-        // const readStream = response.readStream
-        if (this.config.onResponse) {
-            // debugger
-            const shouldContinue = await this.config.onResponse(this.response);
-            if (shouldContinue === false) {
-                return;
-                // fulfilled();
+            if (this.config.onResponse) {
+
+                const shouldContinue = await this.config.onResponse(this.response);
+                if (shouldContinue === false) {
+                    return;
+                }
             }
+
+            await this._save(this.response)
+        } catch (error) {
+            debugger
+            if (this.isCancelled) {
+                const customError = new Error('Request cancelled')
+                customError.code = 'ERR_REQUEST_CANCELLED'
+                throw customError
+            }
+            throw error;
         }
-        // const finalName = await this._getFinalFileName(response.headers);
-        // const finalPath = `${this.config.directory}/${finalName}`;
-        await this._save(this.response)
+
     }
 
     // debugger
@@ -113,17 +117,17 @@ module.exports = class Download {
 
 
     /**
-     * @return {Promise<Request} Request 
+     * @return {Promise<{request:ClientRequest,response:IncomingMessage}}  
      */
     async _request() {
         // this.resetData()
-        const request = await this._makeRequest();
+        const { response, request } = await this._makeRequest();
         // debugger
-        const headers = request.responseStream.headers;
+        const headers = response.headers;
         // debugger
         const contentLength = headers['content-length'] || headers['Content-Length'];
         this.fileSize = parseInt(contentLength);
-        return request
+        return { response, request }
 
     }
 
@@ -175,7 +179,7 @@ module.exports = class Download {
 
     /**
      * 
-     * @return {Promise<Request>}
+     * @return {Promise<{request:ClientRequest,response:IncomingMessage}}  
      */
     async _makeRequest() {
         const { timeout, headers, proxy, url, httpsAgent } = this.config;
@@ -192,13 +196,10 @@ module.exports = class Download {
         }
         // debugger
 
-        // const {response,request} = await performRequest(url, options);
-        const request = new Request(url,options)
-        await request.perform();
-        // const {response,request} = await performRequest(url, options);
-        // debugger
-        // return {response,request};
-        return request;
+        const { response, request } = await makeRequest(url, options);
+        debugger
+
+        return { response, request }
     }
 
 
@@ -213,6 +214,11 @@ module.exports = class Download {
         return fs.createWriteStream(fullPath)
     }
 
+    /**
+     * 
+     * @param {IncomingMessage} stream 
+     * @returns 
+     */
     async _createBufferFromResponseStream(stream) {
         const chunks = []
         for await (let chunk of stream) {
@@ -242,6 +248,7 @@ module.exports = class Download {
 
 
                 if (that.config.onProgress) {
+                    // debugger
                     that.config.onProgress(that.percentage, chunk, remainingSize);
                 }
 
@@ -261,18 +268,7 @@ module.exports = class Download {
 
 
     async _pipeStreams(arrayOfStreams) {
-        // try {
-            try {
-               await pipelinePromisified(...arrayOfStreams); 
-            } catch (error) {
-                debugger
-                throw error
-            }
-        
-        // } catch (error) {
-        // debugger;
-        // }
-
+        await pipelinePromisified(...arrayOfStreams);
     }
 
 
@@ -344,10 +340,13 @@ module.exports = class Download {
     }
 
 
-    async cancel() {
+    cancel() {
         debugger
-        this.request.cancel();
-     }
+        console.log('cancel',!this.request )
+        this.isCancelled = true;
+        abort(this.request)
+
+    }
 }
 
 

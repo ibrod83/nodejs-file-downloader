@@ -1,6 +1,7 @@
 
 
 const rpur = require('./utils/rpur')
+const { capitalize } = require('./utils/string')
 const Download = require('./Download');
 
 
@@ -113,43 +114,6 @@ module.exports = class Downloader {
 
 
 
-  /**
-  * @return {Object}
-  */
-  // download() {
-  //   const that = this;
-  //   const {url,directory,fileName,cloneFiles,timeout,headers,httpsAgent,proxy,onResponse,onBeforeSave,onProgress,shouldBufferResponse,useSynchronousMode} = that.config;
-  //   return {
-  //     async then(fulfilled, rejected) {
-  //       try {
-
-  //         await that._makeUntilSuccessful(async () => {
-
-  //           const download = new Download({url,directory,fileName,cloneFiles,timeout,headers,httpsAgent,proxy,onResponse,onBeforeSave,onProgress,shouldBufferResponse,useSynchronousMode});
-  //           this._currentDownload = download
-  //           // setTimeout(()=>{
-  //           //   download.cancel();
-  //           // },2000)
-  //           await download.start();
-  //           fulfilled()
-  //         })
-  //       } catch (error) {
-  //         // console.log('ERROR',error)
-  //         rejected(error)
-  //       }
-
-  //     },
-  //     cancel(){
-  //       if(this._currentDownload){
-  //         this._currentDownload.cancel();
-  //       }
-  //     }
-
-  //   }
-
-  //   // debugger
-
-  // }
 
   /**
    * @return {Promise<void>}
@@ -158,17 +122,16 @@ module.exports = class Downloader {
     const that = this;
     const { url, directory, fileName, cloneFiles, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode } = that.config;
 
+    const download = new Download({ url, directory, fileName, cloneFiles, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode });
+    this._currentDownload = download
+
+
+    //Repeat downloading process until success    
     await that._makeUntilSuccessful(async () => {
 
-      const download = new Download({ url, directory, fileName, cloneFiles, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode });
-      this._currentDownload = download
-      // setTimeout(()=>{
-      //   download.cancel();
-      // },2000)
       await download.start();
-      
+
     })
-    // debugger
 
   }
 
@@ -179,20 +142,22 @@ module.exports = class Downloader {
   async _makeUntilSuccessful(asyncFunc) {
 
     let data;
-    // debugger;
     const func = asyncFunc.bind(this)
     await rpur(async () => {
 
       data = await func();
     }, {
       onError: async (e) => {
-        // debugger;
         if (this.config.onError) {
           await this.config.onError(e);
         }
       },
       shouldStop: async (e) => {
-        // debugger
+
+        
+        if (e.code === 'ERR_REQUEST_CANCELLED')//Means the request was cancelled, therefore no repetition is required.
+          return true;
+
         if (this.config.shouldStop) {
           if (await this.config.shouldStop(e) === true) {
             return true;
@@ -207,8 +172,8 @@ module.exports = class Downloader {
 
   }
 
-  cancel(){
-    // throw new Error('USER_CANCELLED')
+  cancel() {
+
     this._currentDownload.cancel();
   }
 

@@ -1,6 +1,9 @@
 
 // const axios = require('axios');
 const expect = require('expect')
+const request = require('supertest');
+// const { app } = require('./testServer');
+
 // var MockAdapter = require("axios-mock-adapter");
 // var mock = new MockAdapter(axios);
 const fs = require('fs');
@@ -124,7 +127,7 @@ describe('Downloader tests', () => {
             url: `http://www.${host}.com/contentType`,
             directory: "./downloads",
             cloneFiles: false,
-            onBeforeSave:(name)=>{
+            onBeforeSave: (name) => {
                 deducedName = name;
                 // return 'yoyoyoy'
             }
@@ -157,7 +160,7 @@ describe('Downloader tests', () => {
             url: `http://www.${host}.com/contentType`,
             directory: "./downloads",
             cloneFiles: false,
-            onBeforeSave:(name)=>{
+            onBeforeSave: (name) => {
                 deducedName = name;
                 return 'override.jpg'
             }
@@ -189,7 +192,7 @@ describe('Downloader tests', () => {
             url: `http://www.${host}.com/contentType`,
             directory: "./downloads",
             cloneFiles: false,
-            onProgress: (p, chunk,remaining) => {
+            onProgress: (p, chunk, remaining) => {
                 // debugger;
                 expect(isNaN(p)).toBe(true)
                 expect(isNaN(remaining)).toBe(true)
@@ -604,7 +607,7 @@ describe('Downloader tests', () => {
                 onError: function () {
                     counter++;
                 },
-               
+
             })
             //   console.log(downloader)
             // debugger;
@@ -646,11 +649,11 @@ describe('Downloader tests', () => {
                 onError: function () {
                     counter++;
                 },
-                shouldStop:function(e){
-                    debugger
-                    if(e.statusCode && e.statusCode === 404){
+                shouldStop: function (e) {
+                    // debugger
+                    if (e.statusCode && e.statusCode === 404) {
                         return true;
-                      }
+                    }
                 }
             })
             //   console.log(downloader)
@@ -755,7 +758,7 @@ describe('Downloader tests', () => {
 
         })
 
-        let fileExists= false
+        let fileExists = false
         await downloader.download();
 
 
@@ -763,14 +766,14 @@ describe('Downloader tests', () => {
             await verifyFile('./downloads/Koala.jpg', 29051);
             fileExists = true//Aint supposed to reach this, verifyFile should throw an error.
         } catch (error) {
-            debugger
+            // debugger
             //The "error" should be caught here, and the test should pass
-            debugger
+            // debugger
 
         }
 
-        debugger
-        if(fileExists)throw new Error("Download hasn't stopped")
+        // debugger
+        if (fileExists) throw new Error("Download hasn't stopped")
 
         // throw new Error();
 
@@ -819,7 +822,7 @@ describe('Downloader tests', () => {
                 // debugger
                 return false;
             },
-            fileName:'yoyo.jpg',
+            fileName: 'yoyo.jpg',
             url: `http://www.${host}.com/Koala.jpg`,
             directory: "./downloads",
 
@@ -832,7 +835,7 @@ describe('Downloader tests', () => {
         try {
             const prom = await downloader.download();
         } catch (error) {
-            debugger
+            // debugger
         } finally {
             // debugger
             await verifyFile('./downloads/yoyo.jpg', 29051);
@@ -850,6 +853,76 @@ describe('Downloader tests', () => {
 
 
     })
+
+    // it('Should get custom error after cancellation', async function () {
+
+
+    //     const host = randomHost()
+    //         nock(`http://www.${host}.com`)
+    //         .get('/cancel')
+    //         .reply(200, (uri, requestBody) => {
+    //             const read = fs.createReadStream('./fixtures/Koala.jpg')
+    //             const modifiedStream = Readable.from((async function* () {
+    //                 // counter++
+    //                 // debugger;
+    //                 // await timeout(1000);
+    //                 debugger
+    //                 // if (counter === 4) {
+    //                     for await (const chunk of read) {
+    //                         await timeout(1000);
+    //                         yield chunk;
+
+    //                     }
+    //                 // } else {
+    //                     // debugger;
+    //                     // throw new Error('LOL');
+    //                     // modifiedStream.emit('error','yoyo')
+    //                 // }
+
+
+    //             })());
+    //             return modifiedStream
+    //         }).persist()
+              
+
+
+
+    //     const downloader = new Downloader({
+
+    //         fileName: 'cancelled.jpg',
+    //         // maxAttempts: 4,
+    //         url: `http://www.${host}.com/cancel`,
+    //         directory: "./downloads",
+    //         onResponse() {
+    //             debugger
+    //             downloader.cancel()
+    //         }
+
+    //     })
+    //     let error;
+    //     try {
+    //         // setTimeout(() => {
+    //         //     downloader.cancel()
+    //         // }, 1000)
+    //         // debugger
+    //         await downloader.download();
+    //         console.log('success')
+    //         // debugger
+
+    //     } catch (e) {
+    //         error = e
+    //         // expect(error.code).toBe('ERR_REQUEST_CANCELLED')
+    //     } finally {
+    //         console.log(error)
+    //         debugger
+    //         if (error.code !== 'ERR_REQUEST_CANCELLED') {
+    //             throw new Error('Cancellation did not work')
+    //         }
+    //     }
+
+
+
+    // })
 
     // it('Should fail three times, then succeed', async function () {
 
