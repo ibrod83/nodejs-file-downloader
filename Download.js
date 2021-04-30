@@ -13,6 +13,7 @@ const pipelinePromisified = util.promisify(stream.pipeline);
 const mkdir = util.promisify(fs.mkdir);
 const writeFile = util.promisify(fs.writeFile);
 const { deduceFileName } = require('./utils/fileName');
+const RequestWrapper = require('./RequestWrapper');
 const unlink = util.promisify(fs.unlink)
 const rename = util.promisify(fs.rename)
 
@@ -59,10 +60,14 @@ module.exports = class Download {
         }
 
 
+        // this.wrapperReject = null;
+        this.saveStreamPromise = null;
+
         this.isCancelled = false;
         this.percentage = 0;
         this.fileSize = null;
         this.currentDataSize = 0;
+        this.responsePromise = null;
         this.response = null;//The IncomingMessage read stream.
         this.request = null;//ClientRequest 
 
@@ -77,31 +82,45 @@ module.exports = class Download {
     */
     async start() {
 
-        await this._verifyDirectoryExists(this.config.directory)
+        const prom = new Promise(async (resolve, reject) => {
+            this.wrapperReject = reject;
+            await this._verifyDirectoryExists(this.config.directory)
 
-        try {
-            const { response, request } = await this._request();
-            this.response = response;
-            this.request = request;
+            try {
+                // const { response, request } = await this._request();
+                await this._makeRequest();
+                const response = await this._awaitResponse()
+                this.response = response;
+                debugger
+                // this.request = request;
 
-            if (this.config.onResponse) {
+                if (this.config.onResponse) {
 
-                const shouldContinue = await this.config.onResponse(this.response);
-                if (shouldContinue === false) {
-                    return;
+                    const shouldContinue = await this.config.onResponse(this.response);
+                    if (shouldContinue === false) {
+                        resolve();
+                    }
                 }
+                debugger
+                await this._save(this.response)
+                debugger
+                resolve();
+                debugger
+            } catch (error) {
+                debugger
+                if (this.isCancelled) {
+                    const customError = new Error('Request cancelled')
+                    customError.code = 'ERR_REQUEST_CANCELLED'
+                    reject(customError)
+                }
+                reject(error);
             }
+        })
 
-            await this._save(this.response)
-        } catch (error) {
-            debugger
-            if (this.isCancelled) {
-                const customError = new Error('Request cancelled')
-                customError.code = 'ERR_REQUEST_CANCELLED'
-                throw customError
-            }
-            throw error;
-        }
+
+        return prom;
+
+
 
     }
 
@@ -110,26 +129,64 @@ module.exports = class Download {
 
 
 
-    async _verifyDirectoryExists(directory) {
-        await mkdir(directory, { recursive: true });
-    }
 
 
 
-    /**
-     * @return {Promise<{request:ClientRequest,response:IncomingMessage}}  
-     */
-    async _request() {
-        // this.resetData()
-        const { response, request } = await this._makeRequest();
+
+    async _awaitResponse() {
+        // debugger
+        const response = await this.responsePromise
+
         // debugger
         const headers = response.headers;
         // debugger
         const contentLength = headers['content-length'] || headers['Content-Length'];
         this.fileSize = parseInt(contentLength);
-        return { response, request }
+        return response;
 
     }
+
+
+
+
+
+
+
+    async _makeRequest() {
+        const { timeout, headers, proxy, url, httpsAgent } = this.config;
+        const options = {
+            timeout,
+            headers
+        }
+        if (httpsAgent) {
+            options.httpsAgent = httpsAgent;
+        }
+        else if (proxy) {
+            // debugger
+            options.httpsAgent = new HttpsProxyAgent(proxy)
+        }
+
+        // debugger
+        const wrapper = new RequestWrapper(url, options)
+        this.requestWrapper = wrapper;
+
+        const request = wrapper.makeRequest()
+        this.responsePromise = wrapper.responsePromise;
+        this.request = request;
+        request.on('error', (e) => {
+            debugger;
+            console.log(e)
+            // reject(new Error(e.message))
+        })
+
+        // const { response, request } = await makeRequest(url, options);
+        // debugger
+
+        // return { response, request }
+    }
+
+
+
 
     /**
      * @param {IncomingMessage} response
@@ -172,34 +229,8 @@ module.exports = class Download {
 
 
     }
-
-
-
-
-
-    /**
-     * 
-     * @return {Promise<{request:ClientRequest,response:IncomingMessage}}  
-     */
-    async _makeRequest() {
-        const { timeout, headers, proxy, url, httpsAgent } = this.config;
-        const options = {
-            timeout,
-            headers
-        }
-        if (httpsAgent) {
-            options.httpsAgent = httpsAgent;
-        }
-        else if (proxy) {
-            // debugger
-            options.httpsAgent = new HttpsProxyAgent(proxy)
-        }
-        // debugger
-
-        const { response, request } = await makeRequest(url, options);
-        debugger
-
-        return { response, request }
+    async _verifyDirectoryExists(directory) {
+        await mkdir(directory, { recursive: true });
     }
 
 
@@ -268,7 +299,15 @@ module.exports = class Download {
 
 
     async _pipeStreams(arrayOfStreams) {
-        await pipelinePromisified(...arrayOfStreams);
+        try {
+            debugger
+           await pipelinePromisified(...arrayOfStreams); 
+           debugger
+        } catch (error) {
+            debugger
+            throw error;
+        }
+        
     }
 
 
@@ -342,9 +381,15 @@ module.exports = class Download {
 
     cancel() {
         debugger
-        console.log('cancel',!this.request )
+        console.log('cancel', !this.request)
         this.isCancelled = true;
         abort(this.request)
+        const customError = new Error('Request cancelled')
+        customError.code = 'ERR_REQUEST_CANCELLED'
+        debugger
+        // this.response.emit('error')
+        this.wrapperReject(customError)
+
 
     }
 }
