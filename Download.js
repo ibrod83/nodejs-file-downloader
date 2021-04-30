@@ -82,15 +82,17 @@ module.exports = class Download {
     */
     async start() {
 
-        const prom = new Promise(async (resolve, reject) => {
-            this.wrapperReject = reject;
+        // const prom = new Promise(async (resolve, reject) => {
+            // this.wrapperReject = reject;
             await this._verifyDirectoryExists(this.config.directory)
 
             try {
                 // const { response, request } = await this._request();
                 await this._makeRequest();
-                const response = await this._awaitResponse()
+                const {response,request} = await this._awaitResponse()
                 this.response = response;
+                this.request = request;
+                console.log('this.response.req === this.request',this.response.req === this.request)
                 debugger
                 // this.request = request;
 
@@ -98,27 +100,28 @@ module.exports = class Download {
 
                     const shouldContinue = await this.config.onResponse(this.response);
                     if (shouldContinue === false) {
-                        resolve();
+                        // resolve();
+                        return;
                     }
                 }
                 debugger
                 await this._save(this.response)
                 debugger
-                resolve();
+                // resolve();
                 debugger
             } catch (error) {
                 debugger
                 if (this.isCancelled) {
                     const customError = new Error('Request cancelled')
                     customError.code = 'ERR_REQUEST_CANCELLED'
-                    reject(customError)
+                    throw customError
                 }
-                reject(error);
+                throw error;
             }
-        })
+        // })
 
 
-        return prom;
+        // return prom;
 
 
 
@@ -135,14 +138,14 @@ module.exports = class Download {
 
     async _awaitResponse() {
         // debugger
-        const response = await this.responsePromise
+        const {response,request} = await this.responsePromise
 
         // debugger
         const headers = response.headers;
         // debugger
         const contentLength = headers['content-length'] || headers['Content-Length'];
         this.fileSize = parseInt(contentLength);
-        return response;
+        return {response,request};
 
     }
 
@@ -384,11 +387,12 @@ module.exports = class Download {
         console.log('cancel', !this.request)
         this.isCancelled = true;
         abort(this.request)
-        const customError = new Error('Request cancelled')
-        customError.code = 'ERR_REQUEST_CANCELLED'
+        // this.response.emit('error', 'yoyo');
+        // const customError = new Error('Request cancelled')
+        // customError.code = 'ERR_REQUEST_CANCELLED'
         debugger
         // this.response.emit('error')
-        this.wrapperReject(customError)
+        // this.wrapperReject(customError)
 
 
     }

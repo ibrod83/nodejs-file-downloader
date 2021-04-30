@@ -54,7 +54,8 @@ class RequestWrapper {
             const protocol = url.trim().startsWith('https') ? https : http;
             const redirectableRequest = protocol.request(url, options, (res) => {
                 this.response = res;
-                debugger;
+                console.log(res.req === this.response)
+                // debugger;
                 // nativeRequest = request._currentRequest;
                 // readStream = res;
                 // debugger;
@@ -64,7 +65,7 @@ class RequestWrapper {
                     error.statusCode = res.statusCode
                     return reject(error)
                 }
-                resolve(this.response)
+                resolve({response:this.response,request:res.req})
 
             })
             this.redirectableRequest = redirectableRequest;
@@ -76,6 +77,7 @@ class RequestWrapper {
         // debugger
 
         this.responsePromise = prom;
+        // debugger
         return this.request
 
         // this.redirectableRequest = redirectableRequest;
