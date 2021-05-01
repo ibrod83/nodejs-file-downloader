@@ -2,8 +2,8 @@ const fs = require('fs');
 const abort = require('./utils/abort')
 const http = require('http')//For jsdoc
 const IncomingMessage = http.IncomingMessage
-const ClientRequest = http.ClientRequest
-const { request: makeRequest } = require('./request');
+// const ClientRequest = http.ClientRequest
+
 const stream = require('stream');
 var HttpsProxyAgent = require('https-proxy-agent');
 const { Transform } = require('stream')
@@ -60,7 +60,9 @@ module.exports = class Download {
         }
 
 
-        // this.wrapperReject = null;
+        this.wrapperReject = null;//A reference to the reject function of the wrapping promise;
+        this.wrapperPromise = null;
+        this.wrapperPromiseRejected = false;
         this.saveStreamPromise = null;
 
         this.isCancelled = false;
@@ -69,7 +71,7 @@ module.exports = class Download {
         this.currentDataSize = 0;
         this.responsePromise = null;
         this.response = null;//The IncomingMessage read stream.
-        this.request = null;//ClientRequest 
+        this.redirectableRequest = null;//RedirectableRequest from follow-redirects. Contains a reference to _currentReuqest 
 
 
     }
@@ -82,46 +84,47 @@ module.exports = class Download {
     */
     async start() {
 
-        // const prom = new Promise(async (resolve, reject) => {
-            // this.wrapperReject = reject;
+        const prom = new Promise(async (resolve, reject) => {
+            this.wrapperReject = reject;
             await this._verifyDirectoryExists(this.config.directory)
 
             try {
                 // const { response, request } = await this._request();
                 await this._makeRequest();
-                const {response,request} = await this._awaitResponse()
+                const response = await this._awaitResponse()
                 this.response = response;
-                this.request = request;
-                console.log('this.response.req === this.request',this.response.req === this.request)
-                debugger
+                // this.request = request;
+                // this.redirectableRequest = redirectableRequest;
+                // console.log('this.response.req === this.request',this.response.req === this.request)
+                // debugger
                 // this.request = request;
 
                 if (this.config.onResponse) {
 
                     const shouldContinue = await this.config.onResponse(this.response);
                     if (shouldContinue === false) {
-                        // resolve();
-                        return;
+                        resolve();
+                        // return;
                     }
                 }
-                debugger
+                // debugger
                 await this._save(this.response)
                 debugger
-                // resolve();
+                resolve();
                 debugger
             } catch (error) {
                 debugger
-                if (this.isCancelled) {
-                    const customError = new Error('Request cancelled')
-                    customError.code = 'ERR_REQUEST_CANCELLED'
-                    throw customError
+                if (!this.isCancelled) {//If the request was cancelled, ignore any error.
+                    this.reject(error);
                 }
-                throw error;
+                
             }
-        // })
+        })
+
+        this.wrapperPromise = prom;
 
 
-        // return prom;
+        return prom;
 
 
 
@@ -136,16 +139,20 @@ module.exports = class Download {
 
 
 
+    /**
+     * 
+     * @returns {Promise<IncomingMessage>} response
+     */
     async _awaitResponse() {
         // debugger
-        const {response,request} = await this.responsePromise
+        const {response} = await this.responsePromise
 
         // debugger
         const headers = response.headers;
         // debugger
         const contentLength = headers['content-length'] || headers['Content-Length'];
         this.fileSize = parseInt(contentLength);
-        return {response,request};
+        return response;
 
     }
 
@@ -155,6 +162,10 @@ module.exports = class Download {
 
 
 
+    /**
+     * Makes the request, and sets the redirectableRequest and responsePromise properties
+     * @returns {Promise<void>} 
+     */
     async _makeRequest() {
         const { timeout, headers, proxy, url, httpsAgent } = this.config;
         const options = {
@@ -171,21 +182,19 @@ module.exports = class Download {
 
         // debugger
         const wrapper = new RequestWrapper(url, options)
-        this.requestWrapper = wrapper;
+        // this.requestWrapper = wrapper;
 
         const request = wrapper.makeRequest()
         this.responsePromise = wrapper.responsePromise;
-        this.request = request;
-        request.on('error', (e) => {
+        this.redirectableRequest = request;
+        this.redirectableRequest.on('error', (e) => {
             debugger;
-            console.log(e)
-            // reject(new Error(e.message))
+            if(!this.wrapperPromiseRejected){
+                this.reject(e)
+            }
+
         })
 
-        // const { response, request } = await makeRequest(url, options);
-        // debugger
-
-        // return { response, request }
     }
 
 
@@ -381,18 +390,28 @@ module.exports = class Download {
         return fileName;
     }
 
+    /**
+     * Reject the wrapping promise of the entire download process
+     * @param {Error} e 
+     */
+    reject(e){
+        this.wrapperPromiseRejected = true;
+        this.wrapperReject(e)
+    }
 
+
+    /**
+     * Cancels the download, and rejects the wrapping promise
+     */
     cancel() {
         debugger
-        console.log('cancel', !this.request)
+        
         this.isCancelled = true;
-        abort(this.request)
-        // this.response.emit('error', 'yoyo');
-        // const customError = new Error('Request cancelled')
-        // customError.code = 'ERR_REQUEST_CANCELLED'
+        abort(this.redirectableRequest._currentRequest)
+        const customError = new Error('Request cancelled')
+        customError.code = 'ERR_REQUEST_CANCELLED'
         debugger
-        // this.response.emit('error')
-        // this.wrapperReject(customError)
+        this.reject(customError)
 
 
     }

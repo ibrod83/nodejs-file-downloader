@@ -24,8 +24,8 @@ class RequestWrapper {
         this.config = config;
 
         this.redirectableRequest = null;
-        this.request = null;
-        this.response = null;
+        // this.request = null;
+        // this.response = null;
         this.responsePromise = null;
     }
 
@@ -41,48 +41,35 @@ class RequestWrapper {
             const url = this.url
             const { httpsAgent, headers, timeout, } = this.config;
 
-            // debugger;
-            // console.log('headersss',headers)
             const options = {
                 headers,
                 timeout,
                 agent: httpsAgent,
-                // onTimeout//Function
             }
-            // debugger;
 
             const protocol = url.trim().startsWith('https') ? https : http;
             const redirectableRequest = protocol.request(url, options, (res) => {
-                this.response = res;
-                console.log(res.req === this.response)
-                // debugger;
-                // nativeRequest = request._currentRequest;
-                // readStream = res;
-                // debugger;
+
                 if (res.statusCode > 226) {
                     res.resume();
                     const error = new Error(`Request failed with status code ${res.statusCode}`)
                     error.statusCode = res.statusCode
                     return reject(error)
                 }
-                resolve({response:this.response,request:res.req})
+                resolve({response:res})
 
             })
             this.redirectableRequest = redirectableRequest;
-            this.request = redirectableRequest._currentRequest;
             this.redirectableRequest.end()
-            // this.request = redirectableRequest._currentRequest;
-            // this.redirectableRequest = request;
+            this.redirectableRequest = redirectableRequest;
         })
         // debugger
 
         this.responsePromise = prom;
-        // debugger
-        return this.request
 
-        // this.redirectableRequest = redirectableRequest;
-        // this.request = redirectableRequest._currentRequest;
-        // return this.request
+        return this.redirectableRequest
+
+
     }
     
 
