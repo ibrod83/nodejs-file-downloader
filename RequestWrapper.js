@@ -1,8 +1,8 @@
 // const { read } = require('fs');
 // const http = require('http');
 const { http, https } = require('follow-redirects');
-const IncomingMessage = http.IncomingMessage
-const ClientRequest = http.ClientRequest
+// const IncomingMessage = http.IncomingMessage
+// const ClientRequest = http.ClientRequest
 const abort = require('./utils/abort')
 // const https = require('https');
 // debugger;
@@ -30,10 +30,33 @@ class RequestWrapper {
     }
 
     setTimeout(mil, cb) {
-        this.redirectableRequest.setTimeout(mil, cb)
+        // debugger
+        this.redirectableRequest.setTimeout(mil, ()=>{
+            // debugger
+            cb()
+        })
     }
 
-   
+    async getResponse() {
+        return await this.responsePromise;
+    }
+
+    getRequest() {
+        return this.redirectableRequest._currentRequest;
+    }
+
+    abort() {
+        // debugger
+        abort(this.getRequest())
+    }
+
+    onError(cb) {
+        this.redirectableRequest.on('error', (e) => {
+            cb(e)
+        })
+    }
+
+
     makeRequest() {
         // debugger
         const prom = new Promise((resolve, reject) => {
@@ -56,22 +79,23 @@ class RequestWrapper {
                     error.statusCode = res.statusCode
                     return reject(error)
                 }
-                resolve({response:res})
+                resolve(res)
 
             })
             this.redirectableRequest = redirectableRequest;
             this.redirectableRequest.end()
-            this.redirectableRequest = redirectableRequest;
+            // this.redirectableRequest = redirectableRequest;
+            // this.currentRequest = this.redirectableRequest._currentRequest;
         })
         // debugger
 
         this.responsePromise = prom;
 
-        return this.redirectableRequest
+        // return this.redirectableRequest
 
 
     }
-    
+
 
 }
 // function request(url, config = {}) {

@@ -25,7 +25,32 @@ const configTypes = {
   proxy: {
     type: 'string',
     mandatory: false
-  }
+  },
+  onProgress: {
+    type: 'function',
+    mandatory: false
+  },
+  onResponse: {
+    type: 'function',
+    mandatory: false
+  },
+  shouldStop: {
+    type: 'function',
+    mandatory: false
+  },
+  onBeforeSave: {
+    type: 'function',
+    mandatory: false
+  },
+  onError: {
+    type: 'function',
+    mandatory: false
+  },
+  maxAttempts: {
+    type: 'number',
+    mandatory: false
+  },
+
 };
 
 const validateConfig = (config) => {
@@ -120,14 +145,15 @@ module.exports = class Downloader {
    */
   async download() {
     const that = this;
-    const { url, directory, fileName, cloneFiles, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode } = that.config;
+    const { url, directory, fileName, cloneFiles, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave,  onProgress, shouldBufferResponse, useSynchronousMode } = that.config;
 
-    const download = new Download({ url, directory, fileName, cloneFiles, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode });
-    this._currentDownload = download
+
 
 
     //Repeat downloading process until success    
     await that._makeUntilSuccessful(async () => {
+      const download = new Download({ url, directory, fileName, cloneFiles, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave,  onProgress, shouldBufferResponse, useSynchronousMode });
+      this._currentDownload = download
 
       await download.start();
 
@@ -154,7 +180,7 @@ module.exports = class Downloader {
       },
       shouldStop: async (e) => {
 
-        
+
         if (e.code === 'ERR_REQUEST_CANCELLED')//Means the request was cancelled, therefore no repetition is required.
           return true;
 

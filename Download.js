@@ -1,5 +1,5 @@
 const fs = require('fs');
-const abort = require('./utils/abort')
+// const abort = require('./utils/abort')
 const http = require('http')//For jsdoc
 const IncomingMessage = http.IncomingMessage
 // const ClientRequest = http.ClientRequest
@@ -65,14 +65,15 @@ module.exports = class Download {
         this.wrapperPromiseRejected = false;
         this.saveStreamPromise = null;
 
-        this.isCancelled = false;
+        // this.isCancelled = false;
         this.percentage = 0;
         this.fileSize = null;
         this.currentDataSize = 0;
-        this.responsePromise = null;
-        this.response = null;//The IncomingMessage read stream.
-        this.redirectableRequest = null;//RedirectableRequest from follow-redirects. Contains a reference to _currentReuqest 
 
+        /**         
+         * @property {RequestWrapper} requestWrapper
+         */
+        this.requestWrapper = null;
 
     }
 
@@ -85,39 +86,39 @@ module.exports = class Download {
     async start() {
 
         const prom = new Promise(async (resolve, reject) => {
+            // debugger
             this.wrapperReject = reject;
-            await this._verifyDirectoryExists(this.config.directory)
+
 
             try {
-                // const { response, request } = await this._request();
-                await this._makeRequest();
-                const response = await this._awaitResponse()
-                this.response = response;
-                // this.request = request;
-                // this.redirectableRequest = redirectableRequest;
-                // console.log('this.response.req === this.request',this.response.req === this.request)
+                await this._verifyDirectoryExists(this.config.directory)
                 // debugger
-                // this.request = request;
+                // if (this.config.onBeforeRequest) {
+                //     await this.config.onBeforeRequest();
+                // }
+                this._makeRequest();
+                const response = await this._awaitResponse()
 
                 if (this.config.onResponse) {
 
-                    const shouldContinue = await this.config.onResponse(this.response);
+                    const shouldContinue = await this.config.onResponse(response);
                     if (shouldContinue === false) {
                         resolve();
-                        // return;
                     }
                 }
                 // debugger
-                await this._save(this.response)
-                debugger
+                await this._save(response)
+                // debugger
+
+
                 resolve();
-                debugger
+                // debugger
             } catch (error) {
-                debugger
-                if (!this.isCancelled) {//If the request was cancelled, ignore any error.
+                // debugger
+                if (!this.wrapperPromiseRejected) {//If the request was cancelled, ignore any error.
                     this.reject(error);
                 }
-                
+
             }
         })
 
@@ -145,7 +146,7 @@ module.exports = class Download {
      */
     async _awaitResponse() {
         // debugger
-        const {response} = await this.responsePromise
+        const response = await this.requestWrapper.getResponse()
 
         // debugger
         const headers = response.headers;
@@ -163,10 +164,10 @@ module.exports = class Download {
 
 
     /**
-     * Makes the request, and sets the redirectableRequest and responsePromise properties
+     * 
      * @returns {Promise<void>} 
      */
-    async _makeRequest() {
+    _makeRequest() {
         const { timeout, headers, proxy, url, httpsAgent } = this.config;
         const options = {
             timeout,
@@ -182,19 +183,29 @@ module.exports = class Download {
 
         // debugger
         const wrapper = new RequestWrapper(url, options)
-        // this.requestWrapper = wrapper;
+        this.requestWrapper = wrapper;
 
-        const request = wrapper.makeRequest()
-        this.responsePromise = wrapper.responsePromise;
-        this.redirectableRequest = request;
-        this.redirectableRequest.on('error', (e) => {
-            debugger;
-            if(!this.wrapperPromiseRejected){
-                this.reject(e)
-            }
+        wrapper.makeRequest()
+        // this.responsePromise = wrapper.responsePromise;
+        // this.requestWrapper = request;
+        this._setEvents()
 
+    }
+
+    _setEvents() {
+        this.requestWrapper.onError((e) => {
+            // debugger
+            // console.log(e)
+            this.reject(e)
         })
 
+        if (this.config.timeout)
+            this.requestWrapper.setTimeout(this.config.timeout, () => {
+                this.abort()
+                const error = new Error(`Request timed out`)
+                error.code = "ERR_REQUEST_TIMEDOUT"
+                this.reject(new Error(error))
+            })
     }
 
 
@@ -223,7 +234,13 @@ module.exports = class Download {
             var tempPath = this._getTempFilePath(finalPath);
 
             if (this.config.shouldBufferResponse) {
+                // debugger
                 const buffer = await this._createBufferFromResponseStream(response);
+                // debugger
+                if (this.wrapperPromiseRejected) {
+                    return await this._removeFailedFile(tempPath)
+                }
+
                 await this._saveFromBuffer(buffer, tempPath);
                 // await this._saveFromBuffer(buffer, finalPath);
             } else {
@@ -263,11 +280,15 @@ module.exports = class Download {
      * @returns 
      */
     async _createBufferFromResponseStream(stream) {
+        // debugger
         const chunks = []
         for await (let chunk of stream) {
+            // if(this.wrapperPromiseRejected){
+            //     throw new Error('Stream interrupted')
+            // }
             chunks.push(chunk)
         }
-
+        // debugger
         const buffer = Buffer.concat(chunks)
         return buffer;
     }
@@ -312,14 +333,14 @@ module.exports = class Download {
 
     async _pipeStreams(arrayOfStreams) {
         try {
-            debugger
-           await pipelinePromisified(...arrayOfStreams); 
-           debugger
+            // debugger
+            await pipelinePromisified(...arrayOfStreams);
+            // debugger
         } catch (error) {
-            debugger
+            // debugger
             throw error;
         }
-        
+
     }
 
 
@@ -394,9 +415,15 @@ module.exports = class Download {
      * Reject the wrapping promise of the entire download process
      * @param {Error} e 
      */
-    reject(e){
+    reject(e) {
+        // debugger
         this.wrapperPromiseRejected = true;
         this.wrapperReject(e)
+    }
+
+    async abort() {
+
+        this.requestWrapper.abort();
     }
 
 
@@ -404,13 +431,17 @@ module.exports = class Download {
      * Cancels the download, and rejects the wrapping promise
      */
     cancel() {
-        debugger
-        
-        this.isCancelled = true;
-        abort(this.redirectableRequest._currentRequest)
+        // debugger
+
+        // this.isCancelled = true;
+        // const request = this.requestWrapper.getRequest()
+        // abort(request)
+        if (this.requestWrapper)
+            this.abort()
+
         const customError = new Error('Request cancelled')
         customError.code = 'ERR_REQUEST_CANCELLED'
-        debugger
+        // debugger
         this.reject(customError)
 
 

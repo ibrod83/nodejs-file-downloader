@@ -17,6 +17,7 @@ $ npm install nodejs-file-downloader
   * [Hook into response](#hook-into-response)  
   * [Repeat failed downloads automatically](#repeat-failed-downloads-automatically)  
   * [Prevent unnecessary repetition](#prevent-unnecessary-repetition)  
+  * [Cancel a download](#cancel-a-download)  
   * [Use a Proxy](#use-a-proxy)  
 - [Error handling](#error-handling)     
 
@@ -225,6 +226,44 @@ whether the repetition should continue. This is useful in cases where you're gen
     await downloader.download();
   } catch (error) {//If all attempts fail, the last error is thrown.
     console.log('Final fail',error)
+  }
+
+
+
+```
+
+&nbsp;
+
+#### Cancel a download
+
+This feature is new. Kindly report any bugs you encounter.
+Useful for Electron apps.
+
+
+```javascript
+
+  const downloader = new Downloader({     
+      url: 'http://212.183.159.230/200MB.zip',     
+      directory: "./",     
+  })   
+  
+  try {
+    //Mocking cancellation
+    setTimeout(()=>{
+      downloader.cancel()
+    },2000)
+    
+    await downloader.download();
+
+    //If the download is cancelled, the promise will not be resolved, so this part is never reached
+    console.log('done');
+
+  } catch (error) {//When the download is cancelled, 'ERR_REQUEST_CANCELLED' error is thrown. This is how you can handle cancellations in your code.
+    if(error.code === 'ERR_REQUEST_CANCELLED'){
+      //do something after cancellation..
+    }else{
+      //handle general error..
+    }
   }
 
 
