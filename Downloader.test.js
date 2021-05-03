@@ -860,6 +860,86 @@ describe('Downloader tests', () => {
 
     })
 
+    it('Should use shouldCotinue to stop download', async function () {
+
+        // const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'));
+        // mock.onGet("/koala.jpg").reply(function (config) {
+        //     return [
+        //         200,
+        //         stream,
+        //         {'message':'do not terminate'}
+        //     ];
+        // });
+        // debugger
+        // fs.unlinkSync('./downloads/Koala.jpg')
+        // debugger
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
+            .get('/Koala.jpg')
+            .reply(200, (uri, requestBody) => {
+                // debugger
+                // console.log('YOYO')
+                return fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'))
+                //   fs.readFile(Path.join(__dirname, 'fixtures/Desert.jpg'), cb) // Error-first callback
+            }, { 'message': 'terminate' }).persist()
+
+
+        const downloader = new Downloader({
+            timeout: 1000,
+            // debugMode:true,
+            maxAttempts: 4,
+            onResponse: function (response) {
+                if (response.headers['message'] === 'terminate') {
+                    // return true
+                    // debugger;
+                    return false
+
+                }
+                // debugger
+                return false;
+            },
+            fileName: 'yoyo.jpg',
+            url: `http://www.${host}.com/Koala.jpg`,
+            directory: "./downloads",
+
+        })
+
+
+
+        // debugger;
+        // try {
+        try {
+            const prom = await downloader.download();
+            debugger
+            await verifyFile('./downloads/yoyo.jpg', 29051);
+            debugger
+        } catch (error) {
+            debugger
+            if(!error.code === 'ENOENT'){
+                throw error;
+            }
+            // console.log('error reached')
+            debugger
+        }
+        // finally {
+        //     debugger
+        //     // console.log('finally reached')
+        //     // await verifyFile('./downloads/yoyo.jpg', 29051);
+        // }
+
+        // } catch (error) {
+        // debugger
+        // return;
+        // }  
+
+        // throw new Error();
+
+
+
+
+
+    })
+
     it('Should get ERR_REQUEST_CANCELLED error after cancellation, while streaming', async function () {
 
         let errorCounter = 0

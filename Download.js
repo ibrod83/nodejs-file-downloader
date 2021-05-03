@@ -100,10 +100,10 @@ module.exports = class Download {
                 const response = await this._awaitResponse()
 
                 if (this.config.onResponse) {
-
+                    // debugger
                     const shouldContinue = await this.config.onResponse(response);
                     if (shouldContinue === false) {
-                        resolve();
+                       return resolve();
                     }
                 }
                 // debugger
@@ -122,7 +122,7 @@ module.exports = class Download {
             }
         })
 
-        this.wrapperPromise = prom;
+        // this.wrapperPromise = prom;
 
 
         return prom;
