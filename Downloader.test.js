@@ -1,8 +1,8 @@
 
 // const axios = require('axios');
 const expect = require('expect')
-const request = require('supertest');
-// const { app } = require('./testServer');
+// const request = require('supertest');
+const { app, server } = require('./testServer');
 
 // var MockAdapter = require("axios-mock-adapter");
 // var mock = new MockAdapter(axios);
@@ -36,44 +36,17 @@ describe('Downloader tests', () => {
         done();
     })
 
+    after((done) => {
+        server.close();
+        done();
+    })
 
-    /**
-     * 
-     * @param {string} path 
-     * @param {number} [size] 
-     */
-    function verifyFile(path, size) {
-        return new Promise((resolve, reject) => {
-            fs.readFile(path, (err, data) => {
-                // console.log('err', err)
-                if (err)
-                    return reject(err)
 
-                if (!size || data.length == size) {
-                    resolve()
-                } else {
-                    reject(err)
-                }
-
-            });
-
-        })
-
-    }
-
+   
 
 
     it('Should download a picture and use content-type', async () => {
-        // mock.onGet("/contentType").reply(
-        //     200,
-        //     fs.createReadStream(Path.join(__dirname, 'fixtures/Desert.jpg')),
-        //     {
-        //         'Content-Type': 'image/jpeg',
-        //         'Content-Length': '23642'
-        //     }
 
-        // )
-        // debugger;
         const host = randomHost()
         nock(`http://www.${host}.com`)
             .get('/contentType1')
@@ -605,6 +578,7 @@ describe('Downloader tests', () => {
                 directory: "./downloads",
                 maxAttempts: 3,
                 onError: function () {
+                    debugger
                     counter++;
                 },
 
@@ -854,325 +828,401 @@ describe('Downloader tests', () => {
 
     })
 
-    // it('Should get custom error after cancellation', async function () {
+    it('Should use shouldCotinue to stop download', async function () {
+
+        // const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'));
+        // mock.onGet("/koala.jpg").reply(function (config) {
+        //     return [
+        //         200,
+        //         stream,
+        //         {'message':'do not terminate'}
+        //     ];
+        // });
+        // debugger
+        // fs.unlinkSync('./downloads/Koala.jpg')
+        // debugger
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
+            .get('/Koala.jpg')
+            .reply(200, (uri, requestBody) => {
+                // debugger
+                // console.log('YOYO')
+                return fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'))
+                //   fs.readFile(Path.join(__dirname, 'fixtures/Desert.jpg'), cb) // Error-first callback
+            }, { 'message': 'terminate' }).persist()
 
 
-    //     const host = randomHost()
-    //         nock(`http://www.${host}.com`)
-    //         .get('/cancel')
-    //         .reply(200, (uri, requestBody) => {
-    //             const read = fs.createReadStream('./fixtures/Koala.jpg')
-    //             const modifiedStream = Readable.from((async function* () {
-    //                 // counter++
-    //                 // debugger;
-    //                 // await timeout(1000);
-    //                 debugger
-    //                 // if (counter === 4) {
-    //                     for await (const chunk of read) {
-    //                         await timeout(1000);
-    //                         yield chunk;
+        const downloader = new Downloader({
+            timeout: 1000,
+            // debugMode:true,
+            maxAttempts: 4,
+            onResponse: function (response) {
+                if (response.headers['message'] === 'terminate') {
+                    // return true
+                    // debugger;
+                    return false
 
-    //                     }
-    //                 // } else {
-    //                     // debugger;
-    //                     // throw new Error('LOL');
-    //                     // modifiedStream.emit('error','yoyo')
-    //                 // }
+                }
+                // debugger
+                return false;
+            },
+            fileName: 'yoyo.jpg',
+            url: `http://www.${host}.com/Koala.jpg`,
+            directory: "./downloads",
 
-
-    //             })());
-    //             return modifiedStream
-    //         }).persist()
-              
+        })
 
 
 
-    //     const downloader = new Downloader({
+        // debugger;
+        // try {
+        try {
+            const prom = await downloader.download();
+            debugger
+            await verifyFile('./downloads/yoyo.jpg', 29051);
+            debugger
+        } catch (error) {
+            debugger
+            if(!error.code === 'ENOENT'){
+                throw error;
+            }
+            // console.log('error reached')
+            debugger
+        }
+        // finally {
+        //     debugger
+        //     // console.log('finally reached')
+        //     // await verifyFile('./downloads/yoyo.jpg', 29051);
+        // }
 
-    //         fileName: 'cancelled.jpg',
-    //         // maxAttempts: 4,
-    //         url: `http://www.${host}.com/cancel`,
-    //         directory: "./downloads",
-    //         onResponse() {
-    //             debugger
-    //             downloader.cancel()
-    //         }
+        // } catch (error) {
+        // debugger
+        // return;
+        // }  
 
-    //     })
+        // throw new Error();
+
+
+
+
+
+    })
+
+    it('Should get ERR_REQUEST_CANCELLED error after cancellation, while streaming', async function () {
+        this.timeout(0);
+        let errorCounter = 0
+        const downloader = new Downloader({
+
+            fileName: 'cancelled.jpg',
+            maxAttempts: 4,
+            url: `http://localhost:3002/cancelWhileStream`,
+            directory: "./downloads",
+            onResponse() {
+                debugger
+                // downloader.cancel()
+                setTimeout(() => {
+                    downloader.cancel()
+                }, 2000)
+            },
+            onError() {
+                errorCounter++
+            }
+
+        })
+        let error;
+        try {
+            // setTimeout(() => {
+            //     downloader.cancel()
+            // }, 1000)
+            // debugger
+            await downloader.download();
+            // console.log('success')
+            // debugger
+
+        } catch (e) {
+            error = e
+            // expect(error.code).toBe('ERR_REQUEST_CANCELLED')
+        } finally {
+            // console.log(error)
+            debugger
+            expect(errorCounter).toBe(1)
+            if (!error || error.code !== 'ERR_REQUEST_CANCELLED') {
+                throw new Error('Cancellation did not work')
+            }
+            if(await doesFileExist('./downloads/cancelled.jpg')){
+                throw new Error('cancelled.jpg was not deleted')
+            }
+            if(await doesFileExist('./downloads/cancelled.jpg')){
+                throw new Error('cancelled.jpg.download was not deleted')
+            }
+        }
+
+
+
+    })
+
+    it('Should get ERR_REQUEST_CANCELLED error after cancellation, while streaming, with shouldBufferResponse', async function () {
+        this.timeout(0);
+        let errorCounter = 0
+        const downloader = new Downloader({
+
+            fileName: 'cancelled.jpg',
+            maxAttempts: 4,
+            shouldBufferResponse:true,
+            url: `http://localhost:3002/cancelWhileStream`,
+            directory: "./downloads",
+            onResponse() {
+                debugger
+                // downloader.cancel()
+                setTimeout(() => {
+                    downloader.cancel()
+                }, 1000)
+            },
+            onError() {
+                errorCounter++
+            }
+
+        })
+        let error;
+        try {
+            // setTimeout(() => {
+            //     downloader.cancel()
+            // }, 1000)
+            // debugger
+            await downloader.download();
+            // console.log('success')
+            // debugger
+
+        } catch (e) {
+            error = e
+            // expect(error.code).toBe('ERR_REQUEST_CANCELLED')
+        } finally {
+            // console.log(error)
+            debugger
+            expect(errorCounter).toBe(1)
+            if (!error || error.code !== 'ERR_REQUEST_CANCELLED') {
+                throw new Error('Cancellation did not work')
+            }
+            if(await doesFileExist('./downloads/cancelled.jpg')){
+                throw new Error('cancelled.jpg was not deleted')
+            }
+            if(await doesFileExist('./downloads/cancelled.jpg')){
+                throw new Error('cancelled.jpg.download was not deleted')
+            }
+        }
+
+
+
+    })
+
+    it('Should get ERR_REQUEST_CANCELLED error after cancellation, before stream', async function () {
+
+        let errorCounter = 0
+       const downloader = new Downloader({
+
+            fileName: 'cancelled.jpg',
+            maxAttempts: 4,
+            url: `http://localhost:3002/cancelBeforeStream`,
+            directory: "./downloads",
+            onResponse() {
+                // debugger
+                // downloader.cancel()
+            },
+            onError(){
+                errorCounter++
+            }
+
+        })
+        let error;
+        try {
+            setTimeout(() => {
+                downloader.cancel()
+            }, 1000)
+            // debugger
+            await downloader.download();
+            // console.log('success')
+            // debugger
+
+        } catch (e) {
+            error = e
+            // expect(error.code).toBe('ERR_REQUEST_CANCELLED')
+        } finally {
+            // console.log(error)
+            debugger
+            expect(errorCounter).toBe(1)
+            if (!error || error.code !== 'ERR_REQUEST_CANCELLED') {
+                throw new Error('Cancellation did not work')
+            }
+            if(await doesFileExist('./downloads/cancelled.jpg')){
+                throw new Error('cancelled.jpg was not deleted')
+            }
+            if(await doesFileExist('./downloads/cancelled.jpg')){
+                throw new Error('cancelled.jpg.download was not deleted')
+            }
+        }
+
+
+
+    })
+
+
+
+
+
+    it('Should timeout during stream, twice', async function () {
+        let error;
+        this.timeout(0)
+        try {
+            // let counter = 0
+
+            var onErrorCount = 0
+
+            const downloader = new Downloader({
+                timeout: 1500,
+                // debugMode:true,
+                maxAttempts: 2,
+                fileName: 'timeout.jpg',
+
+                url: `http://localhost:3002/timeoutDuringStream`,
+                directory: "./downloads",
+                onError: function (e) {
+                    debugger;
+                    // console.log('error')
+                    onErrorCount++;
+                }
+            })
+
+
+            await downloader.download();
+            debugger
+
+        } catch (e) {
+            error = e
+            debugger;
+            // console.log('final error',error)
+        } finally {
+            debugger;
+            expect(error.code).toBe('ERR_REQUEST_TIMEDOUT')
+            expect(onErrorCount).toBe(2)
+            // await verifyFile('./downloads/koala.jpg', 29051);
+            if(await doesFileExist('./downloads/timeout.jpg')){
+                throw new Error('timeout.jpg was not deleted')
+            }
+            if(await doesFileExist('./downloads/timeout.jpg')){
+                throw new Error('timeout.jpg.download was not deleted')
+            }
+        }
+
+
+
+
+    })
+
+      it('Should timeout during stream, twice, with shouldBufferResponse', async function () {
+        let error;
+        this.timeout(0)
+        try {
+            // let counter = 0
+
+            var onErrorCount = 0
+
+            const downloader = new Downloader({
+                timeout: 1500,
+                // debugMode:true,
+                shouldBufferResponse:true,
+                maxAttempts: 2,
+                fileName: 'timeout.jpg',
+
+                url: `http://localhost:3002/timeoutDuringStream`,
+                directory: "./downloads",
+                onError: function (e) {
+                    debugger;
+                    // console.log('error')
+                    onErrorCount++;
+                }
+            })
+
+
+            await downloader.download();
+            debugger
+
+        } catch (e) {
+            error = e
+            debugger;
+            // console.log('final error',error)
+        } finally {
+            debugger;
+            expect(error.code).toBe('ERR_REQUEST_TIMEDOUT')
+            expect(onErrorCount).toBe(2)
+            // await verifyFile('./downloads/koala.jpg', 29051);
+            if(await doesFileExist('./downloads/timeout.jpg')){
+                throw new Error('timeout.jpg was not deleted')
+            }
+            if(await doesFileExist('./downloads/timeout.jpg')){
+                throw new Error('timeout.jpg.download was not deleted')
+            }
+        }
+
+
+
+
+    })
+
+    // it('Should timeout before response', async function () {
     //     let error;
+    //     this.timeout(0)
     //     try {
-    //         // setTimeout(() => {
-    //         //     downloader.cancel()
-    //         // }, 1000)
-    //         // debugger
+    //         // let counter = 0
+
+    //         var onErrorCount = 0
+
+    //         const downloader = new Downloader({
+    //             timeout: 1500,
+    //             // debugMode:true,
+    //             // maxAttempts: 2,
+    //             fileName: 'timeout2.jpg',
+
+    //             url: `http://localhost:3002/timeoutBeforeResponse`,
+    //             directory: "./downloads",
+    //             onError: function (e) {
+    //                 debugger;
+    //                 // console.log('error')
+    //                 onErrorCount++;
+    //             }
+    //         })
+
+
     //         await downloader.download();
-    //         console.log('success')
-    //         // debugger
+    //         debugger
 
     //     } catch (e) {
     //         error = e
-    //         // expect(error.code).toBe('ERR_REQUEST_CANCELLED')
+    //         debugger;
+    //         // console.log('final error',error)
     //     } finally {
-    //         console.log(error)
-    //         debugger
-    //         if (error.code !== 'ERR_REQUEST_CANCELLED') {
-    //             throw new Error('Cancellation did not work')
+    //         debugger;
+    //         expect(error.code).toBe('ERR_REQUEST_TIMEDOUT')
+    //         expect(onErrorCount).toBe(1)
+    //         // await verifyFile('./downloads/koala.jpg', 29051);
+    //         if(await doesFileExist('./downloads/timeout2.jpg')){
+    //             throw new Error('timeout2.jpg was not deleted')
+    //         }
+    //         if(await doesFileExist('./downloads/timeout2.jpg')){
+    //             throw new Error('timeout2.jpg.download was not deleted')
     //         }
     //     }
 
 
 
-    // })
-
-    // it('Should fail three times, then succeed', async function () {
-
-    //     try {
-    //         let counter = 0
-
-    //         var onErrorCount = 0
-    //         const host = randomHost()
-    //         nock(`http://www.${host}.com`)
-    //             .get('/Koala.jpg')
-    //             .reply(function (uri, requestBody) {
-    //                 debugger
-    //                 counter++
-    //                 const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'));
-    //                 const code = counter <= 3 ? 500 : 200; 
-    //                 return [
-    //                     code,
-    //                     stream,
-    //                     {}
-    //                 ];
-    //             })
-    //             .persist()
-    //             // .reply(500)
-
-    //         const downloader = new Downloader({
-    //             // timeout: 1000,
-    //             maxAttempts: 4,
-    //             url: `http://www.${host}.com/Koala.jpg`,
-    //             directory: "./downloads",
-    //             onError: function (e) {
-    //                 debugger;
-    //                 onErrorCount++;
-    //             },
-    //             onProgress:(p)=>{
-    //               debugger
-    //                 console.log(p)
-    //             }
-    //         })
-
-    //         await downloader.download();
-
-
-    //     } catch (error) {
-    //         debugger;
-    //     } finally {
-    //         debugger;
-    //         expect(onErrorCount).toBe(4)
-    //     }
 
     // })
 
 
-
-
-    // it('Should fail three times during stream, and then succeed', async function () {
-    //     // this.timeout(10000)
-    //     // let counter = 0
-    //     // const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'));
-    //     // mock.onGet("/koala.jpg").reply(function (config) {
-    //     //     // const { Readable } = require('stream');
-
-
-    //     //     const modifiedStream = Readable.from((async function* () {
-    //     //         counter++
-    //     //         if (counter === 4) {
-    //     //             for await (const chunk of stream) {
-    //     //                 yield chunk;
-
-    //     //             }
-    //     //         } else {
-    //     //             throw new Error('LOL');
-    //     //         }
-
-
-    //     //     })());
-
-    //     //     return [
-    //     //         200,
-    //     //         modifiedStream,
-    //     //         {}
-    //     //     ];
-    //     // });
-
-
-
-    //     try {
-    //         let counter = 0
-
-    //         var onErrorCount = 0
-    //         const host = randomHost()
-    //         nock(`http://www.${host}.com`)
-    //             .get('/Koala.jpg')
-    //             .reply(function(uri, requestBody) {
-    //                 const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'));
-    //                 // stream.emit('error')
-    //                 // stream.emit('close')
-    //                 const modifiedStream = Readable.from((async function* () {
-    //                     counter++
-    //                     debugger;
-    //                     // await timeout(1000);
-    //                     debugger
-    //                     // if (counter === 4) {
-    //                         for await (const chunk of stream) {
-    //                             await timeout(1000);
-    //                             yield chunk;
-
-    //                         }
-    //                     // } else {
-    //                         // debugger;
-    //                         // throw new Error('LOL');
-    //                         // modifiedStream.emit('error','yoyo')
-    //                     // }
-
-
-    //                 })());
-
-    //                 return [
-    //                     200,
-    //                     modifiedStream,
-    //                     // stream,
-    //                     {}
-    //                 ];
-    //             })
-    //             .persist()
-    //         let error;
-    //         const downloader = new Downloader({
-    //             timeout: 500,
-    //             // debugMode:true,
-    //             maxAttempts: 1,
-    //             // onResponse:function(r){
-    //             //     if(r.headers=== 'yoyo'){
-    //             //         error='yoyo'
-    //             //         return false
-    //             //     }
-    //             // },
-    //             url: `http://www.${host}.com/Koala.jpg`,
-    //             directory: "./downloads",
-    //             onError: function (e) {
-    //                 debugger;
-    //                 onErrorCount++;
-    //             }
-    //         })
-
-
-
-
-    //         // const response = await downloader.request()
-    //         // debugger;
-    //         // await downloader.save()
-    //         // debugger;
-    //         await downloader.download();
-
-
-    //     } catch (error) {
-    //         debugger;
-    //         // console.log(error)
-    //     } finally {
-    //         debugger;
-    //         expect(onErrorCount).toBe(1)
-    //         // await verifyFile('./downloads/koala.jpg', 29051);
-    //     }
-
-
-
-
-    // })
 
 
 
 })
 
-
-
-
-
-
-// it('Should fail twice and finally succeed', async () => {
-//     const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'));
-
-//     let counter = 0;
-//     // mock.onGet("http://www.${host}.com/400").reply(function (config) {
-//     //     // debugger;
-//     //     let status;
-//     //     counter++
-//     //     if (counter < 3) {
-//     //         status = 400
-//     //     } else {
-//     //         status = 200
-//     //     }
-//     //     return [
-//     //         status,
-//     //         stream,
-//     //         { 'Content-Type': 'image/jpeg' }
-//     //     ];
-//     // });
-//     nock(`http://www.${host}.com`)
-//             .get('/400')
-//             .reply(200, (uri, requestBody) => {
-
-//             }, {
-//                 'Content-Type': 'image/jpeg',
-//                 'Content-Length': '29051'
-//             })
-
-//     try {
-//         var onErrorCount = 0
-
-//         const downloader = new Downloader({
-//             timeout: 1000,
-//             url: 'http://www.${host}.com/400',
-//             directory: "./downloads",
-//             maxAttempts: 3,
-//             onError: (e) => {
-//                 // debugger;
-//                 onErrorCount++;
-//                 // console.log(e.message)
-//             }
-
-//         })
-//         //   console.log(downloader)
-//         // debugger;
-//         // var onErrorCount = 0
-//         // downloader.on('error', (e) => {
-//         //     debugger;
-//         //     onErrorCount++;
-//         //     // console.log(e.message)
-//         // })
-//         await downloader.download();
-//         // const request = await downloader.request()
-//         // debugger;
-//         // await downloader.save()
-//         // debugger;
-//         // var s = request.data;
-//         // debugger;
-
-
-
-//     } catch (error) {
-//         debugger;
-//     } finally {
-//         debugger;
-//         // expect(s.constructor.name).toBe('ReadStream')
-//         expect(onErrorCount).toBe(2)
-//         await verifyFile('./downloads/400.jpeg', 29051);
-//     }
-
-
-
-
-// })
 
 
 
@@ -1191,5 +1241,43 @@ function timeout(mil) {
         setTimeout(() => {
             res();
         }, mil)
+    })
+}
+
+ /**
+     * 
+     * @param {string} path 
+     * @param {number} [size] 
+     */
+  function verifyFile(path, size) {
+    return new Promise((resolve, reject) => {
+        fs.readFile(path, (err, data) => {
+            // console.log('err', err)
+            if (err)
+                return reject(err)
+
+            if (!size || data.length == size) {
+                resolve()
+            } else {
+                reject(err)
+            }
+
+        });
+
+    })
+
+}
+
+function doesFileExist(path) {
+    return new Promise((resolve, reject) => {
+        fs.readFile(path, (err, data) => {
+            // console.log('err', err)
+            if (err)
+                return resolve(false)
+
+            resolve(true)
+
+        });
+
     })
 }

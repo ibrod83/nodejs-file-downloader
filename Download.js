@@ -70,7 +70,11 @@ module.exports = class Download {
     }
 
 
+    // makeRequestIter({}) {
+    //     return (async function*() {
 
+    //     })();
+    // }
 
     /**
     * @return {Promise<void>}
@@ -95,6 +99,7 @@ module.exports = class Download {
             await this._save(this.response)
         } catch (error) {
             debugger
+            
             if (this.isCancelled) {
                 const customError = new Error('Request cancelled')
                 customError.code = 'ERR_REQUEST_CANCELLED'
