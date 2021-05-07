@@ -4,6 +4,7 @@ const http = require('http')//For jsdoc
 const IncomingMessage = http.IncomingMessage
 const ClientRequest = http.ClientRequest
 const { request: makeRequest } = require('./request');
+const makeRequestIter = require('./makeRequestIter')
 const stream = require('stream');
 var HttpsProxyAgent = require('https-proxy-agent');
 const { Transform } = require('stream')
@@ -13,6 +14,7 @@ const pipelinePromisified = util.promisify(stream.pipeline);
 const mkdir = util.promisify(fs.mkdir);
 const writeFile = util.promisify(fs.writeFile);
 const { deduceFileName } = require('./utils/fileName');
+const { request } = require('express');
 const unlink = util.promisify(fs.unlink)
 const rename = util.promisify(fs.rename)
 
@@ -63,7 +65,7 @@ module.exports = class Download {
         this.percentage = 0;
         this.fileSize = null;
         this.currentDataSize = 0;
-        this.response = null;//The IncomingMessage read stream.
+        this.originalResponse = null;//The IncomingMessage read stream.
         this.request = null;//ClientRequest 
 
 
@@ -84,21 +86,22 @@ module.exports = class Download {
         await this._verifyDirectoryExists(this.config.directory)
 
         try {
-            const { response, request } = await this._request();
-            this.response = response;
-            this.request = request;
+            const { dataStream, originalResponse } = await this._request();
+            this.originalResponse = originalResponse;
+            // this.request = request;
 
             if (this.config.onResponse) {
 
-                const shouldContinue = await this.config.onResponse(this.response);
+                const shouldContinue = await this.config.onResponse(originalResponse);
                 if (shouldContinue === false) {
+                    debugger
                     return;
                 }
             }
-
-            await this._save(this.response)
+            // debugger
+            await this._save({ dataStream, originalResponse } )
         } catch (error) {
-            debugger
+            // debugger
             
             if (this.isCancelled) {
                 const customError = new Error('Request cancelled')
@@ -126,13 +129,13 @@ module.exports = class Download {
      */
     async _request() {
         // this.resetData()
-        const { response, request } = await this._makeRequest();
+        const { dataStream, originalResponse } = await this._makeRequest();
         // debugger
-        const headers = response.headers;
+        const headers = originalResponse.headers;
         // debugger
         const contentLength = headers['content-length'] || headers['Content-Length'];
         this.fileSize = parseInt(contentLength);
-        return { response, request }
+        return { dataStream, originalResponse }
 
     }
 
@@ -140,11 +143,11 @@ module.exports = class Download {
      * @param {IncomingMessage} response
      * @return {Promise<void>}
      */
-    async _save(response) {
+    async _save({ dataStream, originalResponse } ) {
 
         try {
             // debugger
-            let finalName = await this._getFinalFileName(response.headers);
+            let finalName = await this._getFinalFileName(originalResponse.headers);
 
             if (this.config.onBeforeSave) {
                 // debugger
@@ -159,11 +162,11 @@ module.exports = class Download {
             var tempPath = this._getTempFilePath(finalPath);
 
             if (this.config.shouldBufferResponse) {
-                const buffer = await this._createBufferFromResponseStream(response);
+                const buffer = await this._createBufferFromResponseStream(originalResponse);
                 await this._saveFromBuffer(buffer, tempPath);
                 // await this._saveFromBuffer(buffer, finalPath);
             } else {
-                await this._saveFromReadableStream(response, tempPath);
+                await this._saveFromReadableStream(dataStream, tempPath);
                 // await this._saveFromReadableStream(response, finalPath);
             }
             // debugger;
@@ -201,10 +204,11 @@ module.exports = class Download {
         }
         // debugger
 
-        const { response, request } = await makeRequest(url, options);
-        debugger
+        // const { response, request } = await makeRequest(url, options);
+        const {dataStream,originalResponse} = await makeRequestIter(url,options)
+        // debugger
 
-        return { response, request }
+        return {dataStream,originalResponse} 
     }
 
 

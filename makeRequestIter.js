@@ -1,74 +1,109 @@
 const { http, https } = require('follow-redirects');
-const { Readable } = require('stream')
+const { Readable, } = require('stream')
+const fs = require('fs')
 
-async function* makeRequestIter(url, config = {}) {
-    debugger
+async function makeRequestIter(url, config = {}) {
     const protocol = url.trim().startsWith('https') ? https : http;
     let request;
     // let response;
-    debugger
-    const responsePromise = new Promise((resolve) => {
+
+    const responsePromise = new Promise((resolve,reject) => {
         request = protocol.request(url, config, (res) => {
-            debugger
-            console.log('response')
+            if (res.statusCode > 226) {
+                res.resume();
+                const error = new Error(`Request failed with status code ${res.statusCode}`)
+                error.statusCode  = res.statusCode
+                return reject(error)
+            }
+            // debugger
             resolve(res)
         });
-        debugger
-
+        request.end()
     });
-    debugger
+
+    // const abortPromise = new Promise()
+
     const timeoutPromise = new Promise((resolve, reject) => {
         if (config.timeout) {
             request.setTimeout(config.timeout, () => {
-                debugger
+                // debugger
                 console.log('from timeout callback')
                 reject('timeout')
             });
         }
     });
 
-    try {
-        var response =  Promise.race([
-            responsePromise,
-            timeoutPromise
-        ])
-        debugger
-    } catch (error) {
-        debugger
-        throw error;
-    }
+    const response = await Promise.race([
+        responsePromise,
+        timeoutPromise
+    ]);
+    // debugger
 
     const responseIter = response[Symbol.asyncIterator]();
-    debugger
-    while (true) {
-        debugger
-        const item = await Promise.race([
-            responseIter.next(),
-            timeoutPromise
-        ]);
-        if (item.done) {
-            break;
-        }
-        yield item.value;
-    }
 
-    //for await (const chunk of response) {
-    //    yield chunk;
-    //}
+    const data = (async function*(){
+        try {
+            while (true) {
+                const item = await Promise.race([
+                    responseIter.next(),
+                    timeoutPromise
+                ]);
+                if (item.done) {
+                    break;
+                }
+                yield item.value;
+            }
+
+        } catch (error) {
+            console.log('error from mini iterator')
+            debugger
+            abort(request._currentRequest);
+            throw error
+        }
+    })();
+
+    return {
+        dataStream: Readable.from(data),
+        originalResponse: response, // The original
+        // abort
+    };
 }
 
-const iter = makeRequestIter('https://ibrod83.com/timeout/', { timeout: 5000 });
 
-Readable.from(iter).on('data', (c) => {
-    console.log(c)
-}).on('error', (e) => {
-    console.log(e)
-})
+module.exports = makeRequestIter;
+// (async () => {
+//     const { dataStream, originalResponse } = await makeRequestIter('https://ibrod83.com/timeout/',{timeout:5000} );
+//     // debugger
+//     debugger
+//     const writeable = fs.createWriteStream('./timeoutFile')
+//     // Readable.from(iter).on('data', (c) => {
+//     //     console.log(c)
+//     // }).on('error', (e) => {
+//     //     console.log(e)
+//     // })
+//     // readable.on('aborted', (e) => {
+//     //     console.log('from on error', e)
+//     // })
+
+//     dataStream.pipe(writeable)
+// })();
 
 
 
+/**
+ * 
+ * @param {ClientRequest} request 
+ */
+function abort(request){
+    const majorNodeVersion = process.versions.node.split('.')[0];
+        // debugger
+        if (!majorNodeVersion || majorNodeVersion < 14) {
+            request.abort()
 
-
+        } else {
+            request.destroy()
+        }
+}
 
 
 // const items = [];
