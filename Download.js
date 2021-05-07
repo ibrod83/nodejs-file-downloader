@@ -99,10 +99,10 @@ module.exports = class Download {
                 }
             }
             // debugger
-            await this._save({ dataStream, originalResponse } )
+            await this._save({ dataStream, originalResponse })
         } catch (error) {
             // debugger
-            
+
             if (this.isCancelled) {
                 const customError = new Error('Request cancelled')
                 customError.code = 'ERR_REQUEST_CANCELLED'
@@ -143,7 +143,7 @@ module.exports = class Download {
      * @param {IncomingMessage} response
      * @return {Promise<void>}
      */
-    async _save({ dataStream, originalResponse } ) {
+    async _save({ dataStream, originalResponse }) {
 
         try {
             // debugger
@@ -162,7 +162,7 @@ module.exports = class Download {
             var tempPath = this._getTempFilePath(finalPath);
 
             if (this.config.shouldBufferResponse) {
-                const buffer = await this._createBufferFromResponseStream(originalResponse);
+                const buffer = await this._createBufferFromResponseStream(dataStream);
                 await this._saveFromBuffer(buffer, tempPath);
                 // await this._saveFromBuffer(buffer, finalPath);
             } else {
@@ -174,7 +174,9 @@ module.exports = class Download {
 
         } catch (error) {
             // debugger
-            await this._removeFailedFile(tempPath)
+            if (!this.config.shouldBufferResponse)
+                await this._removeFailedFile(tempPath)
+
             throw error;
         }
 
@@ -205,10 +207,10 @@ module.exports = class Download {
         // debugger
 
         // const { response, request } = await makeRequest(url, options);
-        const {dataStream,originalResponse} = await makeRequestIter(url,options)
+        const { dataStream, originalResponse } = await makeRequestIter(url, options)
         // debugger
 
-        return {dataStream,originalResponse} 
+        return { dataStream, originalResponse }
     }
 
 
@@ -351,7 +353,7 @@ module.exports = class Download {
 
     cancel() {
         debugger
-        console.log('cancel',!this.request )
+        console.log('cancel', !this.request)
         this.isCancelled = true;
         abort(this.request)
 

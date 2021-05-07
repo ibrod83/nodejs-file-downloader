@@ -27,8 +27,11 @@ async function makeRequestIter(url, config = {}) {
         if (config.timeout) {
             request.setTimeout(config.timeout, () => {
                 // debugger
+                const customError = new Error('Request timed out')
+                customError.code = 'ERR_REQUEST_TIMEDOUT'
+                // throw customError
                 console.log('from timeout callback')
-                reject('timeout')
+                reject(customError)
             });
         }
     });

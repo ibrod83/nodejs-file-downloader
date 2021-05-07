@@ -1128,104 +1128,104 @@ describe('Downloader tests', () => {
 
     })
 
-    //   it('Should timeout during stream, twice, with shouldBufferResponse', async function () {
-    //     let error;
-    //     this.timeout(0)
-    //     try {
-    //         // let counter = 0
+      it('Should timeout during stream, twice, with shouldBufferResponse', async function () {
+        let error;
+        this.timeout(0)
+        try {
+            // let counter = 0
 
-    //         var onErrorCount = 0
+            var onErrorCount = 0
 
-    //         const downloader = new Downloader({
-    //             timeout: 1500,
-    //             // debugMode:true,
-    //             shouldBufferResponse:true,
-    //             maxAttempts: 2,
-    //             fileName: 'timeout.jpg',
+            const downloader = new Downloader({
+                timeout: 1500,
+                // debugMode:true,
+                shouldBufferResponse:true,
+                maxAttempts: 2,
+                fileName: 'timeout.jpg',
 
-    //             url: `http://localhost:3002/timeoutDuringStream`,
-    //             directory: "./downloads",
-    //             onError: function (e) {
-    //                 debugger;
-    //                 // console.log('error')
-    //                 onErrorCount++;
-    //             }
-    //         })
-
-
-    //         await downloader.download();
-    //         debugger
-
-    //     } catch (e) {
-    //         error = e
-    //         debugger;
-    //         // console.log('final error',error)
-    //     } finally {
-    //         debugger;
-    //         expect(error.code).toBe('ERR_REQUEST_TIMEDOUT')
-    //         expect(onErrorCount).toBe(2)
-    //         // await verifyFile('./downloads/koala.jpg', 29051);
-    //         if(await doesFileExist('./downloads/timeout.jpg')){
-    //             throw new Error('timeout.jpg was not deleted')
-    //         }
-    //         if(await doesFileExist('./downloads/timeout.jpg')){
-    //             throw new Error('timeout.jpg.download was not deleted')
-    //         }
-    //     }
+                url: `http://localhost:3002/timeoutDuringStream`,
+                directory: "./downloads",
+                onError: function (e) {
+                    debugger;
+                    // console.log('error')
+                    onErrorCount++;
+                }
+            })
 
 
+            await downloader.download();
+            debugger
 
-
-    // })
-
-    // it('Should timeout before response', async function () {
-    //     let error;
-    //     this.timeout(0)
-    //     try {
-    //         // let counter = 0
-
-    //         var onErrorCount = 0
-
-    //         const downloader = new Downloader({
-    //             timeout: 1500,
-    //             // debugMode:true,
-    //             // maxAttempts: 2,
-    //             fileName: 'timeout2.jpg',
-
-    //             url: `http://localhost:3002/timeoutBeforeResponse`,
-    //             directory: "./downloads",
-    //             onError: function (e) {
-    //                 debugger;
-    //                 // console.log('error')
-    //                 onErrorCount++;
-    //             }
-    //         })
-
-
-    //         await downloader.download();
-    //         debugger
-
-    //     } catch (e) {
-    //         error = e
-    //         debugger;
-    //         // console.log('final error',error)
-    //     } finally {
-    //         debugger;
-    //         expect(error.code).toBe('ERR_REQUEST_TIMEDOUT')
-    //         expect(onErrorCount).toBe(1)
-    //         // await verifyFile('./downloads/koala.jpg', 29051);
-    //         if(await doesFileExist('./downloads/timeout2.jpg')){
-    //             throw new Error('timeout2.jpg was not deleted')
-    //         }
-    //         if(await doesFileExist('./downloads/timeout2.jpg')){
-    //             throw new Error('timeout2.jpg.download was not deleted')
-    //         }
-    //     }
+        } catch (e) {
+            error = e
+            debugger;
+            // console.log('final error',error)
+        } finally {
+            debugger;
+            expect(error.code).toBe('ERR_REQUEST_TIMEDOUT')
+            expect(onErrorCount).toBe(2)
+            // await verifyFile('./downloads/koala.jpg', 29051);
+            if(await doesFileExist('./downloads/timeout.jpg')){
+                throw new Error('timeout.jpg was not deleted')
+            }
+            if(await doesFileExist('./downloads/timeout.jpg')){
+                throw new Error('timeout.jpg.download was not deleted')
+            }
+        }
 
 
 
 
-    // })
+    })
+
+    it('Should timeout before response', async function () {
+        let error;
+        this.timeout(0)
+        try {
+            // let counter = 0
+
+            var onErrorCount = 0
+
+            const downloader = new Downloader({
+                timeout: 1500,
+                // debugMode:true,
+                // maxAttempts: 2,
+                fileName: 'timeout2.jpg',
+
+                url: `http://localhost:3002/timeoutBeforeResponse`,
+                directory: "./downloads",
+                onError: function (e) {
+                    debugger;
+                    // console.log('error')
+                    onErrorCount++;
+                }
+            })
+
+
+            await downloader.download();
+            debugger
+
+        } catch (e) {
+            error = e
+            debugger;
+            // console.log('final error',error)
+        } finally {
+            debugger;
+            expect(error.code).toBe('ERR_REQUEST_TIMEDOUT')
+            expect(onErrorCount).toBe(1)
+            // await verifyFile('./downloads/koala.jpg', 29051);
+            if(await doesFileExist('./downloads/timeout2.jpg')){
+                throw new Error('timeout2.jpg was not deleted')
+            }
+            if(await doesFileExist('./downloads/timeout2.jpg')){
+                throw new Error('timeout2.jpg.download was not deleted')
+            }
+        }
+
+
+
+
+    })
 
 
 
