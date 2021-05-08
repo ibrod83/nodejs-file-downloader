@@ -37,6 +37,9 @@ app.get('/cancelWhileStream', (req, res) => {
     modifiedStream.pipe(res);
 })
 
+
+
+
 app.get('/cancelBeforeStream', async (req, res) => {
     // console.log('incoming request!')
     // res.send('Hello World!')
@@ -112,7 +115,7 @@ app.get('/timeoutBeforeResponse', async(req, res) => {
     // res.send('Hello World!')
     const read = fs.createReadStream('./fixtures/Koala.jpg',{highWaterMark:2000});
     // read.pipe(res);
-    await timeout(2000)
+    await timeout(5000)
     const modifiedStream = Readable.from((async function* () {
 
         for await (const chunk of read) {
@@ -144,3 +147,48 @@ module.exports = {
     server
 }
 
+
+
+// async function* sourceData() {
+//     yield 1;
+//     yield 2;
+//     yield 3;
+// }
+
+// async function* filter(source, predicate) {
+//     for await (const item of source) {
+//         if (await predicate(item)) {
+//             yield item;
+//         }
+//     }
+// }
+
+// async function* map(source, mapper) {
+//     for await (const item of source) {
+//         yield await mapper(item);
+//     }
+// }
+
+// let iter = sourceData();
+// iter = filter(iter, async val => await checkNumIsValidViaExternalService(val));
+// iter = map(iter, val => val.toFixed(2));
+// iter = map(iter, async val => {
+//     await new Promise(resolve => setTimeout(resolve, 100));
+//     return val;
+// });
+
+// const finalIter = sourceData()
+//     .filter(...)
+//     .map(...)
+//     .map(...)
+
+// const finalIter = pipe(
+//     sourceData(),
+//     filter(...),
+//     map(...),
+//     map(...)
+// );
+
+// for await (const item of iter) {
+//     console.log(item);
+// }

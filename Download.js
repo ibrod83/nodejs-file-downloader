@@ -3,8 +3,8 @@ const abort = require('./utils/abort')
 const http = require('http')//For jsdoc
 const IncomingMessage = http.IncomingMessage
 const ClientRequest = http.ClientRequest
-const { request: makeRequest } = require('./request');
-const makeRequestIter = require('./makeRequestIter')
+// const { request: makeRequest } = require('./request');
+const makeRequest = require('./makeRequestIter');
 const stream = require('stream');
 var HttpsProxyAgent = require('https-proxy-agent');
 const { Transform } = require('stream')
@@ -62,6 +62,7 @@ module.exports = class Download {
 
 
         this.isCancelled = false;
+        this.cancelCb = null;
         this.percentage = 0;
         this.fileSize = null;
         this.currentDataSize = 0;
@@ -207,8 +208,12 @@ module.exports = class Download {
         // debugger
 
         // const { response, request } = await makeRequest(url, options);
-        const { dataStream, originalResponse } = await makeRequestIter(url, options)
+        const { makeRequestIter, cancel } = makeRequest(url, options)
+        debugger
+        this.cancelCb = cancel
+        const { dataStream, originalResponse, } = await makeRequestIter()
         // debugger
+
 
         return { dataStream, originalResponse }
     }
@@ -353,9 +358,14 @@ module.exports = class Download {
 
     cancel() {
         debugger
-        console.log('cancel', !this.request)
-        this.isCancelled = true;
-        abort(this.request)
+        // console.log('cancel', !this.request)
+        if (this.cancelCb) {
+            this.isCancelled = true;
+
+            this.cancelCb()
+        }
+
+        // abort(this.request)
 
     }
 }
