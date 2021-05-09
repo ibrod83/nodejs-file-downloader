@@ -4,7 +4,8 @@
   "description": "A file downloader for NodeJs",
   "main": "Downloader.js",
   "scripts": {
-    "test": "mocha Downloader.test.js",
+    "test": "mocha *.test.js",
+    "test-timeout": "mocha timeout-cancellation.test.js",
     "test-watch": "nodemon --exec \"npm test\""
   },
   "keywords": [

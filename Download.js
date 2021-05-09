@@ -1,10 +1,7 @@
 const fs = require('fs');
-const abort = require('./utils/abort')
 const http = require('http')//For jsdoc
 const IncomingMessage = http.IncomingMessage
-const ClientRequest = http.ClientRequest
-// const { request: makeRequest } = require('./request');
-const makeRequest = require('./makeRequestIter');
+const makeRequest = require('./makeRequest');
 const stream = require('stream');
 var HttpsProxyAgent = require('https-proxy-agent');
 const { Transform } = require('stream')
@@ -14,7 +11,6 @@ const pipelinePromisified = util.promisify(stream.pipeline);
 const mkdir = util.promisify(fs.mkdir);
 const writeFile = util.promisify(fs.writeFile);
 const { deduceFileName } = require('./utils/fileName');
-const { request } = require('express');
 const unlink = util.promisify(fs.unlink)
 const rename = util.promisify(fs.rename)
 
@@ -62,24 +58,19 @@ module.exports = class Download {
 
 
         this.isCancelled = false;
-        this.cancelCb = null;
+        this.cancelCb = null;//Function from makeRequest, to cancel the download.
         this.percentage = 0;
         this.fileSize = null;
         this.currentDataSize = 0;
         this.originalResponse = null;//The IncomingMessage read stream.
-        this.request = null;//ClientRequest 
 
 
     }
 
 
-    // makeRequestIter({}) {
-    //     return (async function*() {
-
-    //     })();
-    // }
 
     /**
+    * The entire download process.
     * @return {Promise<void>}
     */
     async start() {
@@ -89,20 +80,16 @@ module.exports = class Download {
         try {
             const { dataStream, originalResponse } = await this._request();
             this.originalResponse = originalResponse;
-            // this.request = request;
 
             if (this.config.onResponse) {
 
                 const shouldContinue = await this.config.onResponse(originalResponse);
                 if (shouldContinue === false) {
-                    debugger
                     return;
                 }
             }
-            // debugger
             await this._save({ dataStream, originalResponse })
         } catch (error) {
-            // debugger
 
             if (this.isCancelled) {
                 const customError = new Error('Request cancelled')
@@ -114,11 +101,13 @@ module.exports = class Download {
 
     }
 
-    // debugger
 
 
 
-
+    /**
+     * 
+     * @param {string} directory 
+     */
     async _verifyDirectoryExists(directory) {
         await mkdir(directory, { recursive: true });
     }
@@ -126,14 +115,11 @@ module.exports = class Download {
 
 
     /**
-     * @return {Promise<{request:ClientRequest,response:IncomingMessage}}  
+     * @return {Promise<{dataStream:stream.Readable,originalResponse:IncomingMessage}}  
      */
     async _request() {
-        // this.resetData()
         const { dataStream, originalResponse } = await this._makeRequest();
-        // debugger
         const headers = originalResponse.headers;
-        // debugger
         const contentLength = headers['content-length'] || headers['Content-Length'];
         this.fileSize = parseInt(contentLength);
         return { dataStream, originalResponse }
@@ -141,17 +127,15 @@ module.exports = class Download {
     }
 
     /**
-     * @param {IncomingMessage} response
+     * @param {Promise<{dataStream:stream.Readable,originalResponse:IncomingMessage}}  
      * @return {Promise<void>}
      */
     async _save({ dataStream, originalResponse }) {
 
         try {
-            // debugger
             let finalName = await this._getFinalFileName(originalResponse.headers);
 
             if (this.config.onBeforeSave) {
-                // debugger
                 const clientOverideName = await this.config.onBeforeSave(finalName)
                 if (clientOverideName && typeof clientOverideName === 'string') {
                     finalName = clientOverideName;
@@ -190,7 +174,7 @@ module.exports = class Download {
 
     /**
      * 
-     * @return {Promise<{request:ClientRequest,response:IncomingMessage}}  
+     * @return {Promise<{dataStream:stream.Readable,originalResponse:IncomingMessage}}  
      */
     async _makeRequest() {
         const { timeout, headers, proxy, url, httpsAgent } = this.config;
@@ -209,7 +193,7 @@ module.exports = class Download {
 
         // const { response, request } = await makeRequest(url, options);
         const { makeRequestIter, cancel } = makeRequest(url, options)
-        debugger
+        // debugger
         this.cancelCb = cancel
         const { dataStream, originalResponse, } = await makeRequestIter()
         // debugger
@@ -232,7 +216,7 @@ module.exports = class Download {
 
     /**
      * 
-     * @param {IncomingMessage} stream 
+     * @param {stream.Readable} stream 
      * @returns 
      */
     async _createBufferFromResponseStream(stream) {
@@ -264,7 +248,6 @@ module.exports = class Download {
 
 
                 if (that.config.onProgress) {
-                    // debugger
                     that.config.onProgress(that.percentage, chunk, remainingSize);
                 }
 
@@ -290,7 +273,6 @@ module.exports = class Download {
 
 
     async _saveFromReadableStream(read, path) {
-        // debugger;
         const streams = [read];
         const write = this._createWriteStream(path)
         if (this.config.onProgress) {
@@ -299,9 +281,7 @@ module.exports = class Download {
 
         }
         streams.push(write)
-        // debugger
         await this._pipeStreams(streams)
-        // debugger
 
 
     }
@@ -309,8 +289,6 @@ module.exports = class Download {
 
 
     async _saveFromBuffer(buffer, path) {
-        // debugger;
-        // const tempPath = this._getTempFilePath(path);
         await writeFile(path, buffer)
 
     }
@@ -357,15 +335,12 @@ module.exports = class Download {
 
 
     cancel() {
-        debugger
-        // console.log('cancel', !this.request)
         if (this.cancelCb) {
             this.isCancelled = true;
 
             this.cancelCb()
         }
 
-        // abort(this.request)
 
     }
 }
