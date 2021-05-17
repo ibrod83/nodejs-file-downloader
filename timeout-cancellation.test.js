@@ -196,6 +196,8 @@ describe('timeout and cancellation tests', () => {
 
     it('Should timeout during stream, twice', async function () {
         let error;
+        let response;
+        let responseCounter=0;
         this.timeout(0)
         try {
             // let counter = 0
@@ -214,6 +216,10 @@ describe('timeout and cancellation tests', () => {
                     // debugger;
                     // console.log('error')
                     onErrorCount++;
+                },
+                onResponse(r){
+                    response = r;
+                    responseCounter++
                 }
             })
 
@@ -227,6 +233,9 @@ describe('timeout and cancellation tests', () => {
             // console.log('final error',error)
         } finally {
             // debugger;
+            expect(response).toBeTruthy();
+            expect(responseCounter).toBe(2)
+            // console.log(response)
             expect(error.code).toBe('ERR_REQUEST_TIMEDOUT')
             expect(onErrorCount).toBe(2)
             // await verifyFile('./downloads/koala.jpg', 29051);
