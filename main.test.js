@@ -1,4 +1,3 @@
-
 // const axios = require('axios');
 const expect = require('expect')
 // const request = require('supertest');
@@ -155,11 +154,11 @@ describe('Main tests', () => {
     it ('Should skip same name request', async () => {
         let deducedName;
         const host = randomHost()
+        let downloadTimes = 0;
         nock(`http://www.${host}.com`)
             .get('/contentType')
-            .times(1)
             .reply(200, (uri, requestBody) => {
-
+                downloadTimes += 1
                 return fs.createReadStream(Path.join(__dirname, 'fixtures/Desert.jpg'))
                 //   fs.readFile(Path.join(__dirname, 'fixtures/Desert.jpg'), cb) // Error-first callback
             }, {
@@ -173,11 +172,20 @@ describe('Main tests', () => {
             cloneFiles: 'skip'
         })
 
+        const downloader2 = new Downloader({
+            url: `http://www.${host}.com/contentType`,
+            directory: "./downloads",
+            fileName: "testfile.jpg",
+            cloneFiles: 'skip'
+        })
+
         // debugger;
         await downloader.download();
         await downloader.download();
+        await downloader2.download();
         // debugger
         await verifyFile('./downloads/testfile.jpg', 23642);
+        expect(downloadTimes).toBe(1);
         //  console.log(verify)
     })
 
@@ -854,7 +862,7 @@ describe('Main tests', () => {
         // } catch (error) {
         // debugger
         // return;
-        // }  
+        // }
 
         // throw new Error();
 
@@ -938,7 +946,7 @@ describe('Main tests', () => {
         // } catch (error) {
         // debugger
         // return;
-        // }  
+        // }
 
         // throw new Error();
 
@@ -1110,7 +1118,7 @@ describe('Main tests', () => {
 
     // })
 
-   
+
 
 
 
@@ -1291,9 +1299,9 @@ function timeout(mil) {
 }
 
  /**
-     * 
-     * @param {string} path 
-     * @param {number} [size] 
+     *
+     * @param {string} path
+     * @param {number} [size]
      */
   function verifyFile(path, size) {
     return new Promise((resolve, reject) => {
