@@ -1,5 +1,3 @@
-
-
 const rpur = require('./utils/rpur')
 const { capitalize } = require('./utils/string')
 const Download = require('./Download');
@@ -19,7 +17,7 @@ const configTypes = {
     mandatory: false
   },
   cloneFiles: {
-    type: 'boolean',
+    type: ['boolean', 'string'],
     mandatory: false
   },
   proxy: {
@@ -35,11 +33,12 @@ const validateConfig = (config) => {
       if (!config[prop])
         throw new Error(`Must supply a config.${prop}`);
 
-      if (typeof config[prop] !== configTypes[prop].type)
-        generateTypeError(prop)
+        if (-1 === [].concat(configTypes[prop].type).indexOf(typeof config[prop]))
+            generateTypeError(prop)
     }
-    if (config.hasOwnProperty(prop) && typeof config[prop] !== configTypes[prop].type)
-      generateTypeError(prop)
+
+      if (config.hasOwnProperty(prop) &&  -1 === [].concat(configTypes[prop].type).indexOf(typeof config[prop]))
+          generateTypeError(prop)
   }
 }
 

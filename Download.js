@@ -77,6 +77,13 @@ module.exports = class Download {
 
         await this._verifyDirectoryExists(this.config.directory)
 
+        // bailout skip file
+        if (this.config.fileName && this.config.cloneFiles === 'skip') {
+            if (fs.existsSync(this.config.directory + '/' + this.config.fileName)) {
+                return;
+            }
+        }
+
         try {
             const { dataStream, originalResponse } = await this._request();
             this.originalResponse = originalResponse;
@@ -134,6 +141,13 @@ module.exports = class Download {
 
         try {
             let finalName = await this._getFinalFileName(originalResponse.headers);
+
+            if (finalName === this.config.fileName &&
+                this.config.cloneFiles === 'skip' &&
+                fs.existsSync(this.config.directory + '/' + this.config.fileName)) {
+                // will skip this request
+                return;
+            }
 
             if (this.config.onBeforeSave) {
                 const clientOverideName = await this.config.onBeforeSave(finalName)
@@ -323,8 +337,7 @@ module.exports = class Download {
             fileName = deduceFileName(this.config.url, responseHeaders)
         }
 
-        if (this.config.cloneFiles) {
-
+        if (this.config.cloneFiles === true) {
             var fileProcessor = new FileProcessor({ useSynchronousMode: this.config.useSynchronousMode, fileName, path: this.config.directory })
 
             fileName = await fileProcessor.getAvailableFileName()
@@ -344,5 +357,3 @@ module.exports = class Download {
 
     }
 }
-
-

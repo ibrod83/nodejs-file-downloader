@@ -152,6 +152,35 @@ describe('Main tests', () => {
 
     })
 
+    it ('Should skip same name request', async () => {
+        let deducedName;
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
+            .get('/contentType')
+            .times(1)
+            .reply(200, (uri, requestBody) => {
+
+                return fs.createReadStream(Path.join(__dirname, 'fixtures/Desert.jpg'))
+                //   fs.readFile(Path.join(__dirname, 'fixtures/Desert.jpg'), cb) // Error-first callback
+            }, {
+                'Content-Type': 'image/jpeg',
+                'Content-Length': '23642'
+            })
+        const downloader = new Downloader({
+            url: `http://www.${host}.com/contentType`,
+            directory: "./downloads",
+            fileName: "testfile.jpg",
+            cloneFiles: 'skip'
+        })
+
+        // debugger;
+        await downloader.download();
+        await downloader.download();
+        // debugger
+        await verifyFile('./downloads/testfile.jpg', 23642);
+        //  console.log(verify)
+    })
+
     it('Should get NaN in onProgress', async () => {
 
         const host = randomHost()
