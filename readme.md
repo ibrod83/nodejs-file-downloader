@@ -134,23 +134,7 @@ By default, nodejs-file-downloader uses config.cloneFiles = true, which means th
   }) 
 
 ```
-
-&nbsp;
-
-#### Skip download existing files
-
-set `config.cloneFiles = 'skip'` will skip download when file is existing. then can accelerate multiple files.
-
-
-```javascript
-
-  const downloader = new Downloader({
-      url: 'http://212.183.159.230/200MB.zip',
-      directory: "./",
-      cloneFiles: 'skip'
-  })
-
-```
+You can also set cloneFiles to the string "skip". This will cause the downloader to simply skip a download, If a file with the same name exists.
 
 &nbsp;
 

@@ -1,3 +1,9 @@
+
+## 4.6.0 10/06/2021
+
+### Feature
+- Added the ability to skip downloads if the same file name exists.
+
 ## 4.5.3 09/05/2021
 
 ### Fixed

@@ -10,9 +10,10 @@ const FileProcessor = require('./utils/FileProcessor');
 const pipelinePromisified = util.promisify(stream.pipeline);
 const mkdir = util.promisify(fs.mkdir);
 const writeFile = util.promisify(fs.writeFile);
-const { deduceFileName } = require('./utils/fileName');
+const { deduceFileName,exists } = require('./utils/fileName');
 const unlink = util.promisify(fs.unlink)
 const rename = util.promisify(fs.rename)
+
 
 
 module.exports = class Download {
@@ -23,7 +24,7 @@ module.exports = class Download {
    * @param {string} config.url 
    * @param {string} [config.directory]    
    * @param {string} [config.fileName = undefined] 
-   * @param {boolean} [config.cloneFiles=true] 
+   * @param {boolean | string} [config.cloneFiles=true] //Can also be the string "skip"
    * @param {number} [config.timeout=6000]   
    * @param {object} [config.headers = undefined] 
    * @param {object} [config.httpsAgent = undefined] 
@@ -79,7 +80,7 @@ module.exports = class Download {
 
         // bailout skip file
         if (this.config.fileName && this.config.cloneFiles === 'skip') {
-            if (fs.existsSync(this.config.directory + '/' + this.config.fileName)) {
+            if (await exists(this.config.directory + '/' + this.config.fileName)) {
                 return;
             }
         }
@@ -144,7 +145,7 @@ module.exports = class Download {
 
             if (finalName === this.config.fileName &&
                 this.config.cloneFiles === 'skip' &&
-                fs.existsSync(this.config.directory + '/' + this.config.fileName)) {
+                await exists(this.config.directory + '/' + this.config.fileName)) {
                 // will skip this request
                 return;
             }
@@ -357,3 +358,5 @@ module.exports = class Download {
 
     }
 }
+
+

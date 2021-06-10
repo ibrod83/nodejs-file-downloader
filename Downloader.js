@@ -52,7 +52,8 @@ module.exports = class Downloader {
    * @param {string} config.url 
    * @param {string} [config.directory]    
    * @param {string} [config.fileName = undefined] 
-   * @param {boolean} [config.cloneFiles=true] 
+   * @param {boolean | string} [config.cloneFiles=true] true will create a duplicate. false will overwrite the existing file. The string "skip"
+   * will cause the downloader to skip the download process in case a file with the same name already exists.
    * @param {number} [config.timeout=6000] 
    * @param {number} [config.maxAttempts=1] 
    * @param {object} [config.headers = undefined] 
