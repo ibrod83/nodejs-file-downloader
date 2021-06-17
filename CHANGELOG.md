@@ -1,4 +1,8 @@
+## 4.7.0 17/06/2021
 
+### Feature
+- Added type definition file.
+- Replaced config.cloneFiles = 'skip' with a new property, config.skipExistingFileName
 ## 4.6.0 10/06/2021
 
 ### Feature
