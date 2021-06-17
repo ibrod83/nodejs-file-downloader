@@ -17,7 +17,7 @@ const configTypes = {
     mandatory: false
   },
   cloneFiles: {
-    type: ['boolean', 'string'],
+    type: 'boolean',
     mandatory: false
   },
   proxy: {
@@ -52,8 +52,8 @@ module.exports = class Downloader {
    * @param {string} config.url 
    * @param {string} [config.directory]    
    * @param {string} [config.fileName = undefined] 
-   * @param {boolean | string} [config.cloneFiles=true] true will create a duplicate. false will overwrite the existing file. The string "skip"
-   * will cause the downloader to skip the download process in case a file with the same name already exists.
+   * @param {boolean} [config.cloneFiles=true] true will create a duplicate. false will overwrite the existing file. 
+   * @param {boolean} [config.skipExistingFileName = false] true will cause the downloader to skip the download process in case a file with the same name already exists.
    * @param {number} [config.timeout=6000] 
    * @param {number} [config.maxAttempts=1] 
    * @param {object} [config.headers = undefined] 
@@ -85,6 +85,7 @@ module.exports = class Downloader {
       proxy: undefined,
       headers: undefined,
       cloneFiles: true,
+      skipExistingFileName:false,
       shouldBufferResponse: false,
       onResponse: undefined,
       onBeforeSave: undefined,
@@ -120,11 +121,11 @@ module.exports = class Downloader {
    */
   async download() {
     const that = this;
-    const { url, directory, fileName, cloneFiles, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode } = that.config;
+    const { url, directory, fileName, cloneFiles, skipExistingFileName, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode } = that.config;
 
     //Repeat downloading process until success    
     await that._makeUntilSuccessful(async () => {
-      const download = new Download({ url, directory, fileName, cloneFiles, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode });
+      const download = new Download({ url, directory, fileName, cloneFiles, skipExistingFileName, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode });
       this._currentDownload = download
 
       await download.start();

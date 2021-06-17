@@ -25,9 +25,9 @@ function makeRequest(url, config = {}) {
             resolve(res)
         });
         request.end()
-        request.on('error',()=>{
+        request.on('error',(e)=>{
 
-            responsePromiseReject()
+            responsePromiseReject(e)
         })
 
     });

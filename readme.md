@@ -134,7 +134,7 @@ By default, nodejs-file-downloader uses config.cloneFiles = true, which means th
   }) 
 
 ```
-You can also set cloneFiles to the string "skip". This will cause the downloader to simply skip a download, If a file with the same name exists.
+If you want to completely skip downloading a file, when a file with the same name already exists, use config.skipExistingFileName = true
 
 &nbsp;
 

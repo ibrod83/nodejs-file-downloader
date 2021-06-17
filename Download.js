@@ -24,7 +24,8 @@ module.exports = class Download {
    * @param {string} config.url 
    * @param {string} [config.directory]    
    * @param {string} [config.fileName = undefined] 
-   * @param {boolean | string} [config.cloneFiles=true] //Can also be the string "skip"
+   * @param {boolean } [config.cloneFiles=true] 
+   * @param {boolean} [config.skipExistingFileName = false]
    * @param {number} [config.timeout=6000]   
    * @param {object} [config.headers = undefined] 
    * @param {object} [config.httpsAgent = undefined] 
@@ -46,6 +47,7 @@ module.exports = class Download {
             proxy: undefined,
             headers: undefined,
             cloneFiles: true,
+            skipExistingFileName:false,
             shouldBufferResponse: false,
             onResponse: undefined,
             onBeforeSave: undefined,
@@ -78,8 +80,8 @@ module.exports = class Download {
 
         await this._verifyDirectoryExists(this.config.directory)
 
-        // bailout skip file
-        if (this.config.fileName && this.config.cloneFiles === 'skip') {
+       
+        if (this.config.fileName && this.config.skipExistingFileName) {
             if (await exists(this.config.directory + '/' + this.config.fileName)) {
                 return;
             }
@@ -143,9 +145,7 @@ module.exports = class Download {
         try {
             let finalName = await this._getFinalFileName(originalResponse.headers);
 
-            if (finalName === this.config.fileName &&
-                this.config.cloneFiles === 'skip' &&
-                await exists(this.config.directory + '/' + this.config.fileName)) {
+            if ( this.config.skipExistingFileName && await exists(this.config.directory + '/' + finalName)) {
                 // will skip this request
                 return;
             }

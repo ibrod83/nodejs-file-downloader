@@ -5,6 +5,7 @@
   "main": "Downloader.js",
   "scripts": {
     "test": "mocha *.test.js",
+    "test-main": "mocha main.test.js",
     "test-timeout": "mocha timeout-cancellation.test.js",
     "test-watch": "nodemon --exec \"npm test\""
   },
