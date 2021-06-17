@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@types/jest": "^25.2.2",
+    "@types/node": "^15.12.2",
     "expect": "^26.0.1",
     "express": "^4.17.1",
     "mocha": "^7.1.2",
@@ -43,5 +44,6 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/ibrod83/nodejs-file-downloader.git"
-  }
+  },
+  "typings": "Downloader.td.ts"
 }
