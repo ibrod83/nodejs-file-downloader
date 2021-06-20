@@ -1,3 +1,9 @@
+## 4.7.1 20/06/2021
+
+### Fixed
+- Fixed type definitions.
+
+
 ## 4.7.0 17/06/2021
 
 ### Feature

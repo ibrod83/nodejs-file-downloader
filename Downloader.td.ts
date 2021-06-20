@@ -14,10 +14,10 @@ interface DownloaderConfig{
     httpsAgent?:any
     proxy?:string
     onError?(e:Error):void
-    onResponse?(r:http.IncomingMessage):void
-    onBeforeSave?(finalName:string):void
+    onResponse?(r:http.IncomingMessage):boolean|void
+    onBeforeSave?(finalName:string):string|void
     onProgress?(percentage:string,chunk:object,remaningSize:number):void
-    shouldStop?(e:Error):void
+    shouldStop?(e:Error):boolean|void
     shouldBufferResponse?:boolean
     useSynchronousMode?:boolean
 
