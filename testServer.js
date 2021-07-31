@@ -127,6 +127,21 @@ app.get('/timeoutBeforeResponse', async(req, res) => {
     modifiedStream.pipe(res);
 })
 
+app.get('/koala',async(req,res)=>{
+
+    const read = fs.createReadStream('./fixtures/Koala.jpg',{highWaterMark:2000});
+
+    const modifiedStream = Readable.from((async function* () {
+
+        for await (const chunk of read) {
+            yield chunk
+        }
+
+
+    })());
+    modifiedStream.pipe(res);
+})
+
 const server = app.listen(port, () => {
     console.log(port)
 })

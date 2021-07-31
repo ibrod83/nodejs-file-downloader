@@ -1,12 +1,13 @@
 {
   "name": "nodejs-file-downloader",
-  "version": "4.7.1",
+  "version": "4.7.2",
   "description": "A file downloader for NodeJs",
   "main": "Downloader.js",
   "scripts": {
     "test": "mocha *.test.js",
     "test-main": "mocha main.test.js",
     "test-timeout": "mocha timeout-cancellation.test.js",
+    "test-concurrency": "mocha concurrency.test.js",
     "test-watch": "nodemon --exec \"npm test\""
   },
   "keywords": [

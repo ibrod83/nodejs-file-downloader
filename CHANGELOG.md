@@ -1,3 +1,9 @@
+
+## 4.7.2 31/07/2021
+
+### Added
+- Added concurrency test.
+
 ## 4.7.1 20/06/2021
 
 ### Fixed
