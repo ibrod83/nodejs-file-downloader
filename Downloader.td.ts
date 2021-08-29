@@ -1,5 +1,5 @@
 import http from 'http';
-export = Downloader;
+export default Downloader;
 
 
 interface DownloaderConfig{
