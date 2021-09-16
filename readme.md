@@ -14,6 +14,7 @@ $ npm install nodejs-file-downloader
   * [Get the deduced file name and override it](#get-the-deduced-file-name-and-override-it)  
   * [Custom file name](#custom-file-name)  
   * [Overwrite existing files](#overwrite-existing-files)  
+  * [Send custom headers](#send-custom-headers)  
   * [Hook into response](#hook-into-response)  
   * [Repeat failed downloads automatically](#repeat-failed-downloads-automatically)  
   * [Prevent unnecessary repetition](#prevent-unnecessary-repetition)  
@@ -136,6 +137,23 @@ By default, nodejs-file-downloader uses config.cloneFiles = true, which means th
 ```
 If you want to completely skip downloading a file, when a file with the same name already exists, use config.skipExistingFileName = true
 
+&nbsp;
+
+#### Send custom headers
+
+Just add a "headers" property to the config object:
+
+```javascript
+
+  const downloader = new Downloader({     
+      url: 'http://212.183.159.230/200MB.zip',     
+      directory: "./",  
+      headers:{
+        'Some-Header':value
+      } 
+  }) 
+
+```
 &nbsp;
 
 #### Hook into response

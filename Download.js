@@ -143,21 +143,21 @@ module.exports = class Download {
     async _save({ dataStream, originalResponse }) {
 
         try {
-            let finalName = await this._getFinalFileName(originalResponse.headers);
+            let {finalFileName,originalFileName} = await this._getFileName(originalResponse.headers);
 
-            if ( this.config.skipExistingFileName && await exists(this.config.directory + '/' + finalName)) {
+            if ( this.config.skipExistingFileName && await exists(this.config.directory + '/' + originalFileName)) {
                 // will skip this request
                 return;
             }
 
             if (this.config.onBeforeSave) {
-                const clientOverideName = await this.config.onBeforeSave(finalName)
+                const clientOverideName = await this.config.onBeforeSave(finalFileName)
                 if (clientOverideName && typeof clientOverideName === 'string') {
-                    finalName = clientOverideName;
+                    finalFileName = clientOverideName;
                 }
             }
 
-            const finalPath = `${this.config.directory}/${finalName}`;
+            const finalPath = `${this.config.directory}/${finalFileName}`;
 
             var tempPath = this._getTempFilePath(finalPath);
 
@@ -169,11 +169,9 @@ module.exports = class Download {
                 await this._saveFromReadableStream(dataStream, tempPath);
                 // await this._saveFromReadableStream(response, finalPath);
             }
-            // debugger;
             await this._renameTempFileToFinalName(tempPath, finalPath)
 
         } catch (error) {
-            // debugger
             if (!this.config.shouldBufferResponse)
                 await this._removeFailedFile(tempPath)
 
@@ -201,17 +199,13 @@ module.exports = class Download {
             options.httpsAgent = httpsAgent;
         }
         else if (proxy) {
-            // debugger
             options.httpsAgent = new HttpsProxyAgent(proxy)
         }
-        // debugger
 
         // const { response, request } = await makeRequest(url, options);
         const { makeRequestIter, cancel } = makeRequest(url, options)
-        // debugger
         this.cancelCb = cancel
         const { dataStream, originalResponse, } = await makeRequestIter()
-        // debugger
 
 
         return { dataStream, originalResponse }
@@ -225,7 +219,6 @@ module.exports = class Download {
      * @return {Promie<WritableStream>}
      */
     _createWriteStream(fullPath) {
-        // debugger
         return fs.createWriteStream(fullPath)
     }
 
@@ -313,7 +306,6 @@ module.exports = class Download {
     }
 
     async _renameTempFileToFinalName(temp, final) {
-        // debugger;
         await rename(temp, final)
     }
 
@@ -330,21 +322,24 @@ module.exports = class Download {
     /**
      * @param {object} responseHeaders 
      */
-    async _getFinalFileName(responseHeaders) {
-        let fileName;
+    async _getFileName(responseHeaders) {
+        let originalFileName;
+        let finalFileName;
         if (this.config.fileName) {
-            fileName = this.config.fileName
+            originalFileName = this.config.fileName
         } else {
-            fileName = deduceFileName(this.config.url, responseHeaders)
+            originalFileName = deduceFileName(this.config.url, responseHeaders)
         }
 
         if (this.config.cloneFiles === true) {
-            var fileProcessor = new FileProcessor({ useSynchronousMode: this.config.useSynchronousMode, fileName, path: this.config.directory })
+            var fileProcessor = new FileProcessor({ useSynchronousMode: this.config.useSynchronousMode, fileName:originalFileName, path: this.config.directory })
 
-            fileName = await fileProcessor.getAvailableFileName()
+            finalFileName = await fileProcessor.getAvailableFileName()
+        }else{
+            finalFileName = originalFileName
         }
 
-        return fileName;
+        return {finalFileName,originalFileName};
     }
 
 

@@ -1,4 +1,12 @@
 
+## 4.7.4 16/09/2021
+
+### Fixed
+- Fixed skipExistingFile not working when cloneFiles is true
+
+### Added
+- Added documentation of custom headers
+
 ## 4.7.3 29/08/2021
 
 ### Fixed

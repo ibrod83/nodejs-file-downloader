@@ -164,6 +164,8 @@ describe('Main tests', () => {
             }, {
                 'Content-Type': 'image/jpeg',
                 'Content-Length': '23642'
+              
+
             }).persist()
         const downloader = new Downloader({
             url: `http://www.${host}.com/contentType`,
@@ -186,6 +188,47 @@ describe('Main tests', () => {
         await verifyFile('./downloads/testfile.jpg', 23642);
         expect(downloadTimes).toBe(1);
         //  console.log(verify)
+    })
+
+    it ('Should skip same name request, without config.fileName', async () => {
+       
+        const host = randomHost()      
+        nock(`http://www.${host}.com`)
+            .get('/contentType')
+            .reply(200, (uri, requestBody) => {
+               
+                return fs.createReadStream(Path.join(__dirname, 'fixtures/Desert.jpg'))
+                //   fs.readFile(Path.join(__dirname, 'fixtures/Desert.jpg'), cb) // Error-first callback
+            }, {
+                'Content-Type': 'image/jpeg',
+                'Content-Length': '23642',
+                'Content-Disposition': 'attachment; filename="testfile2.jpg"'
+
+              
+
+            }).persist()
+        const downloader = new Downloader({
+            url: `http://www.${host}.com/contentType`,
+            directory: "./downloads",
+        })
+
+        const downloader2 = new Downloader({
+            url: `http://www.${host}.com/contentType`,
+            directory: "./downloads",
+            skipExistingFileName:true
+        })
+
+        await downloader.download();
+        await downloader2.download();
+        await verifyFile('./downloads/testfile2.jpg', 23642);
+        let error=false;
+        try {
+            //Make sure no clone is present
+            await verifyFile('./downloads/testfile2_2.jpg', 23642);
+        } catch (e) {
+            error = true
+        }
+        expect(error).toBe(true);
     })
 
     it('Should get NaN in onProgress', async () => {

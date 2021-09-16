@@ -15,7 +15,6 @@ const { promises: Fs } = require('fs')
    * @return {string} fileName
    */
 function deduceFileNameFromUrl(url) {
-  // debugger;
   const cleanUrl = removeQueryString(url);
   const baseName = sanitize(path.basename(cleanUrl));
   return baseName;
@@ -31,13 +30,11 @@ function deduceFileNameFromUrl(url) {
  */
 function deduceFileName(url, headers) {
 
-  // debugger
   //First option
   const fileNameFromContentDisposition = getFileNameFromContentDisposition(headers['content-disposition'] || headers['Content-Disposition']);
   // console.log('filenamecontentdisposition', fileNameFromContentDisposition)
   if (fileNameFromContentDisposition) return fileNameFromContentDisposition;
 
-  // debugger;
   //Second option
   if (path.extname(url)) {//First check if the url even has an extension
     const fileNameFromUrl = deduceFileNameFromUrl(url);
@@ -73,8 +70,6 @@ function getFileNameFromContentType(contentType, url) {
 
 
 function getFileNameFromContentDisposition(contentDisposition) {
-  // debugger;
-  // const contentDisposition = this.response.headers['content-disposition'] || this.response.headers['Content-Disposition'];
   if (!contentDisposition || !contentDisposition.includes('filename=')) {
     return "";
   }
@@ -89,7 +84,6 @@ function getFileNameFromContentDisposition(contentDisposition) {
 }
 
 function removeExtension(str) {
-  // debugger;
   const arr = str.split('.');
   if (arr.length == 1) {
     return str;
