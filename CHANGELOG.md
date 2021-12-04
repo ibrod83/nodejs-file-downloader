@@ -1,4 +1,9 @@
 
+## 4.8.0 05/12/2021
+
+### Added
+- Added a reference to the response object, to the Error object.
+
 ## 4.7.4 16/09/2021
 
 ### Fixed

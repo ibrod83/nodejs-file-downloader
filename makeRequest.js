@@ -19,6 +19,7 @@ function makeRequest(url, config = {}) {
                 res.resume();
                 const error = new Error(`Request failed with status code ${res.statusCode}`)
                 error.statusCode = res.statusCode
+                error.response = res;
                 return reject(error)
             }
 

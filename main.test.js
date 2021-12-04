@@ -1,4 +1,5 @@
 // const axios = require('axios');
+
 const expect = require('expect')
 // const request = require('supertest');
 // const { app, server } = require('./testServer');
@@ -39,12 +40,15 @@ describe('Main tests', () => {
     //     if(server){
     //       server.close();  
     //     }
-        
+
     //     done();
     // })
 
 
-   
+
+
+
+
 
 
     it('Should download a picture and use content-type', async () => {
@@ -164,19 +168,21 @@ describe('Main tests', () => {
             }, {
                 'Content-Type': 'image/jpeg',
                 'Content-Length': '23642'
-              
+
 
             }).persist()
         const downloader = new Downloader({
             url: `http://www.${host}.com/contentType`,
             directory: "./downloads",
             fileName: "testfile.jpg",
+            cloneFiles:true
         })
 
         const downloader2 = new Downloader({
             url: `http://www.${host}.com/contentType`,
             directory: "./downloads",
             fileName: "testfile.jpg",
+            cloneFiles:true,
             skipExistingFileName:true
         })
 
@@ -191,12 +197,12 @@ describe('Main tests', () => {
     })
 
     it ('Should skip same name request, without config.fileName', async () => {
-       
+
         const host = randomHost()      
         nock(`http://www.${host}.com`)
             .get('/contentType')
             .reply(200, (uri, requestBody) => {
-               
+
                 return fs.createReadStream(Path.join(__dirname, 'fixtures/Desert.jpg'))
                 //   fs.readFile(Path.join(__dirname, 'fixtures/Desert.jpg'), cb) // Error-first callback
             }, {
@@ -204,7 +210,7 @@ describe('Main tests', () => {
                 'Content-Length': '23642',
                 'Content-Disposition': 'attachment; filename="testfile2.jpg"'
 
-              
+
 
             }).persist()
         const downloader = new Downloader({
@@ -229,6 +235,50 @@ describe('Main tests', () => {
             error = true
         }
         expect(error).toBe(true);
+    })
+
+    it('Should download a file, without a known fileName, and skip the second one', async () => {
+        rimraf.sync('./downloads')
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
+            .get('/contentType')
+            .reply(200, (uri, requestBody) => {
+
+                return fs.createReadStream(Path.join(__dirname, 'fixtures/Desert.jpg'))
+                //   fs.readFile(Path.join(__dirname, 'fixtures/Desert.jpg'), cb) // Error-first callback
+            }, {
+                'Content-Type': 'image/jpeg',
+                'Content-Length': '23642',
+
+
+            }).persist()
+
+        const downloader = new Downloader({
+            url: `http://www.${host}.com/contentType`,
+            directory: "./downloads",
+            skipExistingFileName: true
+        })
+        const downloader2 = new Downloader({
+            url: `http://www.${host}.com/contentType`,
+            directory: "./downloads",
+            skipExistingFileName: true,
+            cloneFiles: true
+        })
+
+        await downloader.download();
+        await downloader2.download();
+        await verifyFile('./downloads/contentType.jpeg', 23642);
+        const files = fs.readdirSync('./downloads')
+        // console.log(files)
+        expect(files.length).toBe(1)
+        // let error=false;
+        // try {
+        //     //Make sure no clone is present
+        //     await verifyFile('./downloads/testfile2_2.jpg', 23642);
+        // } catch (e) {
+        //     error = true
+        // }
+        // expect(error).toBe(true);
     })
 
     it('Should get NaN in onProgress', async () => {
@@ -674,6 +724,7 @@ describe('Main tests', () => {
 
             // await verifyFile('./downloads/Koala.jpg', 29051);
         } catch (e) {
+            debugger;
             error=e
             // expect(counter).toBe(3)
             // expect(counter).toBe(3)
@@ -998,10 +1049,46 @@ describe('Main tests', () => {
 
     })
 
-   
+    it('Should get the underlying response object from an Error, stream it and present the content', async function () {
 
 
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
+            .get('/Koala.jpg')
+            .reply(400, (uri, requestBody) => {
+                return {
+                    customErrorCode: 'SOME_CODE'
+                    
+                }
+            }, { 'message': 'terminate' }).persist()
 
+        let error;
+        const downloader = new Downloader({
+
+            fileName: 'yoyo2.jpg',
+            url: `http://www.${host}.com/Koala.jpg`,
+            directory: "./downloads",
+
+        })
+
+        try {
+            await downloader.download();
+
+
+        } catch (e) {
+            const response = e.response;
+            let str = ""
+            response.on('data', function (chunk) { 
+                str += chunk;
+            });
+
+            response.on('end', function () {
+                const body = JSON.parse(str)              
+                expect(body.customErrorCode).toBe('SOME_CODE')
+            });
+
+        }
+    })
 
 })
 
@@ -1026,12 +1113,12 @@ function timeout(mil) {
     })
 }
 
- /**
-     *
-     * @param {string} path
-     * @param {number} [size]
-     */
-  function verifyFile(path, size) {
+/**
+    *
+    * @param {string} path
+    * @param {number} [size]
+    */
+function verifyFile(path, size) {
     return new Promise((resolve, reject) => {
         fs.readFile(path, (err, data) => {
             // console.log('err', err)
