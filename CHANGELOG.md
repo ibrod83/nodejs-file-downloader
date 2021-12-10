@@ -1,4 +1,9 @@
 
+## 4.8.1 10/12/2021
+
+### Added
+- Added a User-Agent explanation.
+
 ## 4.8.0 05/12/2021
 
 ### Added

@@ -24,6 +24,7 @@ $ npm install nodejs-file-downloader
   - [Use a Proxy](#use-a-proxy)
 - [Error handling](#error-handling)
   - [Getting the response object during an error](#getting-the-response-object-during-an-error)
+  - [ECONNRESET](#ECONNRESET)
 
 ## Examples
 
@@ -318,6 +319,24 @@ try {
     });
   }
 }
+```
+
+&nbsp;
+
+#### ECONNRESET
+
+If you're getting a consistent ECONNRESET error, it's possible the server requires a User-Agent header to be sent. Try adding it:
+
+```javascript
+const downloader = new Downloader({
+  url: "http://www.user-agent-required.com/",
+  directory: "./",
+  headers:{
+    'User-Agent':'Some user agent..'
+  }
+});
+
+
 ```
 
 &nbsp;
