@@ -1,157 +1,91 @@
-const expect = require('expect')
-// const request = require('supertest');
+const expect = require('expect');
 const { app, server } = require('./testServer');
 
-// var MockAdapter = require("axios-mock-adapter");
-// var mock = new MockAdapter(axios);
+
 const fs = require('fs');
 const Path = require('path');
 const rimraf = require('rimraf')
 const Downloader = require('./Downloader');
 const { Readable } = require('stream');
+const e = require('express');
 describe('concurrency tests', () => {
-
     beforeEach((done) => {
         rimraf.sync("./downloads");
-        // console.log('done')
-        // deleteFolderRecursive('./downloads')
         done();
     })
 
     after((done) => {
-        // if (server) {
-        //     server.close();
-        // }
-
         done();
     })
 
-
-    it('Should download 1000 files, with different names, same directory - at the same time, within a synchronous loop', async function () {
+    it('Should download 500 files, with different names, same directory - at the same time, within a synchronous loop', async function () {
         this.timeout(0);
-        let errorCounter = 0
+        let errorCounter = 0;
         async function makeDownload(fileName) {
             const downloader = new Downloader({
-
                 fileName,
                 maxAttempts: 4,
-                // timeout: 50000,
                 cloneFiles: true,
                 url: `http://localhost:3002/koala`,
                 directory: "./downloads",
-                // onResponse() {
-
-                // },
-                // onError() {
-                //     errorCounter++
-                // }
-
             })
-            // console.log('downloading')
             try {
-                await downloader.download()
+                await downloader.download();
             } catch (error) {
-                errorCounter++
+                console.log('error:', error)
+                errorCounter++;
             }
-
-            // console.log('finish')
         }
-        // try {
-        const names = []
-        const promises = []
-        for (let i = 0; i < 1000; i++) {
-            const name = makeid(10) + '.jpg'
-            names.push(name)
+
+        const names = [];
+        const promises = [];
+        for (let i = 0; i < 500; i++) {
+            const name = makeid(10) + '.jpg';
+            names.push(name);
             promises.push(makeDownload(name))
         }
         await Promise.all(promises);
-
         for (let name of names) {
-            // counter++
             const size = getFilesizeInBytes('./downloads/' + name);
-            // console.log(size)
             if (errorCounter > 0 || size !== 29051) {
-                throw new Error('At least one file failed')
+                throw new Error('At least one file failed');
             }
-
         }
-
-
-
     })
 
     it('Should download 1000 files, with identical names, same directory - at the same time, within a synchronous loop, and skip 999', async function () {
         this.timeout(0);
-        let errorCounter = 0
+        let errorCounter = 0;
         async function makeDownload(fileName) {
             const downloader = new Downloader({
-
                 fileName,
                 maxAttempts: 4,
-                // timeout: 50000,
-                // cloneFiles:true,
                 skipExistingFileName: true,
                 url: `http://localhost:3002/koala`,
                 directory: "./downloads",
-                // onResponse() {
-
-                // },
-                // onError() {
-                //     errorCounter++
-                // }
-
             })
-            // console.log('downloading')
             try {
                 await downloader.download()
             } catch (error) {
-                errorCounter++
+                errorCounter++;
             }
-
-            // console.log('finish')
         }
-        // try {
         const names = []
         const promises = []
         for (let i = 0; i < 1000; i++) {
-            const name = 'someName' + '.jpg'
-            names.push(name)
-            promises.push(makeDownload(name))
+            const name = 'someName' + '.jpg';
+            names.push(name);
+            promises.push(makeDownload(name));
         }
         await Promise.all(promises);
         console.log(promises.length)
-        // for(let name of names){
-        //     // counter++
-        //     const size = getFilesizeInBytes('./downloads/'+name);
-        //     // console.log(size)
-        //     if(errorCounter > 0 || size !== 29051){
-        //         throw new Error('At least one file failed')
-        //     }
 
-        // }
         const files = fs.readdirSync('./downloads');
-        //    console.log(files.length)
         expect(files.length).toBe(1)
-
-
-
     })
 
 })
 
-// function doesFileExist(path) {
-//     return new Promise((resolve, reject) => {
-//         fs.readFile(path, (err, data) => {
-//             // console.log('err', err)
-//             if (err)
-//                 return resolve(false)
-
-//             resolve(true)
-
-//         });
-
-//     })
-// }
 
 function makeid(length) {
     var result = '';
