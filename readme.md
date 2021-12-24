@@ -340,3 +340,17 @@ const downloader = new Downloader({
 ```
 
 &nbsp;
+
+
+## Development
+run `git clone https://github.com/ibrod83/nodejs-file-downloader.git`
+and then:  
+
+```javascript
+npm i
+```
+## Testing
+
+```javascript
+npm test
+```
