@@ -7,6 +7,11 @@ If you encounter any bugs or have a question, please don't hesitate to open an i
 ```sh
 $ npm install nodejs-file-downloader
 ```
+## Testing
+
+```sh
+npm test
+```
 
 # Table of Contents
 
@@ -341,16 +346,3 @@ const downloader = new Downloader({
 
 &nbsp;
 
-
-## Development
-run `git clone https://github.com/ibrod83/nodejs-file-downloader.git`
-and then:  
-
-```javascript
-npm i
-```
-## Testing
-
-```javascript
-npm test
-```
