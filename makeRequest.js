@@ -10,19 +10,12 @@ function makeRequest(url, config = {}) {
 
     let request;
 
+
     const responsePromise = new Promise((resolve, reject) => {
         responsePromiseReject = reject;
         const protocol = url.trim().startsWith('https') ? https : http;
 
         request = protocol.request(url, config, (res) => {
-            if (res.statusCode > 226) {
-                res.resume();
-                const error = new Error(`Request failed with status code ${res.statusCode}`)
-                error.statusCode = res.statusCode
-                error.response = res;
-                return reject(error)
-            }
-
             resolve(res)
         });
         request.end()
@@ -78,7 +71,6 @@ function makeRequest(url, config = {}) {
                 throw error
             }
         })();
-
         return {
             dataStream: Readable.from(data),
             originalResponse: response, // The original

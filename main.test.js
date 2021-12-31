@@ -634,6 +634,7 @@ describe('Main tests', () => {
             await downloader.download();
         } catch (e) {
             const response = e.response;
+            debugger;
             let str = ""
             response.on('data', function (chunk) { 
                 str += chunk;
@@ -643,6 +644,72 @@ describe('Main tests', () => {
                 const body = JSON.parse(str)              
                 expect(body.customErrorCode).toBe('SOME_CODE')
             });
+            // expect(response.customErrorCode).toBe('SOME_CODE')
+        }
+    })
+
+    it('Should get the underlying responseBody an Error, as JSON', async function () {
+
+
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
+            .get('/Koala.jpg')
+            .reply(400, (uri, requestBody) => {
+                return {
+                    customErrorCode: 'SOME_CODE'
+                    
+                }
+            }, { 'message': 'terminate' }).persist()
+
+        let error;
+        const downloader = new Downloader({
+
+            fileName: 'yoyo2.jpg',
+            url: `http://www.${host}.com/Koala.jpg`,
+            directory: "./downloads",
+
+        })
+
+        try {
+            await downloader.download();
+
+
+        } catch (e) {
+            const body = e.responseBody;
+            
+            expect(body.customErrorCode).toBe('SOME_CODE')
+        }
+    })
+
+    it('Should get the underlying responseBody an Error, as string', async function () {
+
+
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
+            .get('/Koala.jpg')
+            .reply(400, (uri, requestBody) => {
+                return 'SOME_CODE'
+                    
+                
+            }, { 'message': 'terminate' }).persist()
+
+        let error;
+        const downloader = new Downloader({
+
+            fileName: 'yoyo2.jpg',
+            url: `http://www.${host}.com/Koala.jpg`,
+            directory: "./downloads",
+
+        })
+
+        try {
+            await downloader.download();
+
+
+        } catch (e) {
+            const body = e.responseBody;
+            
+            expect(body).toBe('SOME_CODE')
         }
     })
 })

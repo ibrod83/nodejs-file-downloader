@@ -10,7 +10,8 @@ const FileProcessor = require('./utils/FileProcessor');
 const pipelinePromisified = util.promisify(stream.pipeline);
 const mkdir = util.promisify(fs.mkdir);
 const writeFile = util.promisify(fs.writeFile);
-const { deduceFileName,exists } = require('./utils/fileName');
+const { deduceFileName, exists } = require('./utils/fileName');
+const { isJson } = require('./utils/string');
 const unlink = util.promisify(fs.unlink)
 const rename = util.promisify(fs.rename)
 
@@ -47,7 +48,7 @@ module.exports = class Download {
             proxy: undefined,
             headers: undefined,
             cloneFiles: true,
-            skipExistingFileName:false,
+            skipExistingFileName: false,
             shouldBufferResponse: false,
             onResponse: undefined,
             onBeforeSave: undefined,
@@ -80,7 +81,7 @@ module.exports = class Download {
 
         await this._verifyDirectoryExists(this.config.directory)
 
-       
+
         if (this.config.fileName && this.config.skipExistingFileName) {
             if (await exists(this.config.directory + '/' + this.config.fileName)) {
                 return;
@@ -89,8 +90,16 @@ module.exports = class Download {
 
         try {
             const { dataStream, originalResponse } = await this._request();
-            this.originalResponse = originalResponse;
 
+            this.originalResponse = originalResponse;
+           
+            if (originalResponse.statusCode > 226) {
+
+                const error = await this._createErrorObject(dataStream,originalResponse)
+
+                throw error;
+            }
+            
             if (this.config.onResponse) {
 
                 const shouldContinue = await this.config.onResponse(originalResponse);
@@ -98,6 +107,8 @@ module.exports = class Download {
                     return;
                 }
             }
+            
+
             await this._save({ dataStream, originalResponse })
         } catch (error) {
 
@@ -111,7 +122,27 @@ module.exports = class Download {
 
     }
 
+    async _createErrorObject(dataStream, originalResponse) {
+        const responseString = await this._getStringFromStream(dataStream);
 
+        const error = new Error(`Request failed with status code ${originalResponse.statusCode}`)
+
+        error.statusCode = originalResponse.statusCode
+
+        error.response = originalResponse
+
+        error.responseBody = isJson(responseString) ? JSON.parse(responseString) : responseString
+
+        return error;
+    }
+
+   
+
+
+    async _getStringFromStream(stream) {
+        const buffer = await this._createBufferFromResponseStream(stream);
+        return buffer.toString();
+    }
 
 
     /**
@@ -143,9 +174,9 @@ module.exports = class Download {
     async _save({ dataStream, originalResponse }) {
 
         try {
-            let {finalFileName,originalFileName} = await this._getFileName(originalResponse.headers);
+            let { finalFileName, originalFileName } = await this._getFileName(originalResponse.headers);
 
-            if ( this.config.skipExistingFileName && await exists(this.config.directory + '/' + originalFileName)) {
+            if (this.config.skipExistingFileName && await exists(this.config.directory + '/' + originalFileName)) {
                 // will skip this request
                 return;
             }
@@ -164,10 +195,8 @@ module.exports = class Download {
             if (this.config.shouldBufferResponse) {
                 const buffer = await this._createBufferFromResponseStream(dataStream);
                 await this._saveFromBuffer(buffer, tempPath);
-                // await this._saveFromBuffer(buffer, finalPath);
             } else {
                 await this._saveFromReadableStream(dataStream, tempPath);
-                // await this._saveFromReadableStream(response, finalPath);
             }
             await this._renameTempFileToFinalName(tempPath, finalPath)
 
@@ -202,11 +231,9 @@ module.exports = class Download {
             options.httpsAgent = new HttpsProxyAgent(proxy)
         }
 
-        // const { response, request } = await makeRequest(url, options);
-        const { makeRequestIter, cancel } = makeRequest(url, options)
+        const { makeRequestIter, cancel, } = makeRequest(url, options)
         this.cancelCb = cancel
         const { dataStream, originalResponse, } = await makeRequestIter()
-
 
         return { dataStream, originalResponse }
     }
@@ -332,14 +359,14 @@ module.exports = class Download {
         }
 
         if (this.config.cloneFiles === true) {
-            var fileProcessor = new FileProcessor({ useSynchronousMode: this.config.useSynchronousMode, fileName:originalFileName, path: this.config.directory })
+            var fileProcessor = new FileProcessor({ useSynchronousMode: this.config.useSynchronousMode, fileName: originalFileName, path: this.config.directory })
 
             finalFileName = await fileProcessor.getAvailableFileName()
-        }else{
+        } else {
             finalFileName = originalFileName
         }
 
-        return {finalFileName,originalFileName};
+        return { finalFileName, originalFileName };
     }
 
 
