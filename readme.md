@@ -28,7 +28,7 @@ npm test
   - [Cancel a download](#cancel-a-download)
   - [Use a Proxy](#use-a-proxy)
 - [Error handling](#error-handling)
-  - [Getting the response object during an error](#getting-the-response-object-during-an-error)
+  - [Getting the response body during an error](#getting-the-response-body-during-an-error)
   - [ECONNRESET](#ECONNRESET)
 
 ## Examples
@@ -296,11 +296,9 @@ or an http status code of 400 or higher.
 If the auto-repeat feature is enabled(by setting the maxAttempts to higher than 1), then only a failure of the final attempt will throw an error.
 
 &nbsp;
-#### Getting the response object during an error
+#### Getting the response body during an error
 
-If a status code of 400 or above is received, the program throws an error. In this case, a reference to Node's response object(http.IncomingMessage) will be appended to the
-Error object.This is useful only in cases where the server might send back JSON or HTML, instead of the requested file, with some custom error handling on the response body.
- It can be accessed like this:
+If a status code of 400 or above is received, the program throws an error. In this case, a reference to the response body will be available in error.responseBody:
 
 ```javascript
 const downloader = new Downloader({
@@ -311,19 +309,11 @@ const downloader = new Downloader({
 try {
   await downloader.download();
 } catch (error) {
-  if (error.response) {
-    //Check if the reference exists
-    const response = error.response;
-    let str = "";
-    response.on("data", function (chunk) {//Being that the response object is a stream, we need to stream it in order to get the entire text.
-      str += chunk;
-    });
-
-    response.on("end", function () {      
-      console.log(str)//If it's JSON, you'll wanna use JSON.parse here.
-    });
+  if (error.responseBody) {
+    console.log(error.responseBody)
   }
 }
+
 ```
 
 &nbsp;

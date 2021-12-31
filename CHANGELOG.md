@@ -1,4 +1,10 @@
 
+
+## 4.9.0 31/12/2021
+
+### Added
+- Added a reference to the response body, to the error object(error.responseBody). Original IncomingMessage response stream is still available at error.response, but being that it's already consumed by the time the error is thrown, any existing code relying on streaming this stream manually will fail.
+
 ## 4.8.1 10/12/2021
 
 ### Added

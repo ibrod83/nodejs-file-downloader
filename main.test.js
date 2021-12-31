@@ -610,44 +610,7 @@ describe('Main tests', () => {
         }
     })
 
-    it('Should get the underlying response object from an Error, stream it and present the content', async function () {
-        const host = randomHost()
-        nock(`http://www.${host}.com`)
-            .get('/Koala.jpg')
-            .reply(400, (uri, requestBody) => {
-                return {
-                    customErrorCode: 'SOME_CODE'
-                    
-                }
-            }, { 'message': 'terminate' }).persist()
-
-        let error;
-        const downloader = new Downloader({
-
-            fileName: 'yoyo2.jpg',
-            url: `http://www.${host}.com/Koala.jpg`,
-            directory: "./downloads",
-
-        })
-
-        try {
-            await downloader.download();
-        } catch (e) {
-            const response = e.response;
-            debugger;
-            let str = ""
-            response.on('data', function (chunk) { 
-                str += chunk;
-            });
-
-            response.on('end', function () {
-                const body = JSON.parse(str)              
-                expect(body.customErrorCode).toBe('SOME_CODE')
-            });
-            // expect(response.customErrorCode).toBe('SOME_CODE')
-        }
-    })
-
+    
     it('Should get the underlying responseBody an Error, as JSON', async function () {
 
 
