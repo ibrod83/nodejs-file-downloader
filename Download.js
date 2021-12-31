@@ -195,10 +195,8 @@ module.exports = class Download {
             if (this.config.shouldBufferResponse) {
                 const buffer = await this._createBufferFromResponseStream(dataStream);
                 await this._saveFromBuffer(buffer, tempPath);
-                // await this._saveFromBuffer(buffer, finalPath);
             } else {
                 await this._saveFromReadableStream(dataStream, tempPath);
-                // await this._saveFromReadableStream(response, finalPath);
             }
             await this._renameTempFileToFinalName(tempPath, finalPath)
 
@@ -233,13 +231,9 @@ module.exports = class Download {
             options.httpsAgent = new HttpsProxyAgent(proxy)
         }
 
-        // const { response, request } = await makeRequest(url, options);
         const { makeRequestIter, cancel, } = makeRequest(url, options)
-        // debugger;
-        // console.log('statusCode',statusCode)
         this.cancelCb = cancel
         const { dataStream, originalResponse, } = await makeRequestIter()
-        // console.log('statusCode',originalResponse.statusCode)
 
         return { dataStream, originalResponse }
     }
@@ -262,7 +256,6 @@ module.exports = class Download {
      */
     async _createBufferFromResponseStream(stream) {
         const chunks = []
-        debugger;
         for await (let chunk of stream) {
             chunks.push(chunk)
         }
