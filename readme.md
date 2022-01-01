@@ -1,5 +1,3 @@
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/paypalme/ibrod83)
-
 nodejs-file-downloader is a simple utility for downloading files. It hides the complexity of dealing with streams, redirects, paths and duplicate file names. Can automatically repeat failed downloads.
 
 If you encounter any bugs or have a question, please don't hesitate to open an issue.
