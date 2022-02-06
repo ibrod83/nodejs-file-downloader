@@ -225,10 +225,10 @@ module.exports = class Download {
             headers
         }
         if (httpsAgent) {
-            options.httpsAgent = httpsAgent;
+            options.agent = httpsAgent;
         }
         else if (proxy) {
-            options.httpsAgent = new HttpsProxyAgent(proxy)
+            options.agent = new HttpsProxyAgent(proxy)
         }
 
         const { makeRequestIter, cancel, } = makeRequest(url, options)
