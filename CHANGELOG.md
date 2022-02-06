@@ -1,4 +1,8 @@
 
+## 4.9.3 06/02/2022
+
+### Fixed
+- Fixed broken httpsAgent property. Added a warning about security issue in follow-redirects.
 
 ## 4.9.0 31/12/2021
 
