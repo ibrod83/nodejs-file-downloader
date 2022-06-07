@@ -23,6 +23,7 @@ module.exports = class Download {
    *
    * @param {object} config
    * @param {string} config.url
+   * @param {string} config.method
    * @param {string} [config.directory]
    * @param {string} [config.fileName = undefined]
    * @param {boolean } [config.cloneFiles=true]
