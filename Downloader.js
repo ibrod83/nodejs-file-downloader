@@ -8,6 +8,10 @@ const configTypes = {
     type: 'string',
     mandatory: true
   },
+  method: {
+    type: 'string',
+    mandatory: false
+  },
   directory: {
     type: 'string',
     mandatory: false
@@ -47,25 +51,26 @@ module.exports = class Downloader {
 
 
   /**
-   * 
-   * @param {object} config 
-   * @param {string} config.url 
-   * @param {string} [config.directory]    
-   * @param {string} [config.fileName = undefined] 
-   * @param {boolean} [config.cloneFiles=true] true will create a duplicate. false will overwrite the existing file. 
+   *
+   * @param {object} config
+   * @param {string} config.url
+   * @param {string} config.method
+   * @param {string} [config.directory]
+   * @param {string} [config.fileName = undefined]
+   * @param {boolean} [config.cloneFiles=true] true will create a duplicate. false will overwrite the existing file.
    * @param {boolean} [config.skipExistingFileName = false] true will cause the downloader to skip the download process in case a file with the same name already exists.
-   * @param {number} [config.timeout=6000] 
-   * @param {number} [config.maxAttempts=1] 
-   * @param {object} [config.headers = undefined] 
-   * @param {object} [config.httpsAgent = undefined] 
-   * @param {string} [config.proxy = undefined] 
-   * @param {function} [config.onError = undefined] 
-   * @param {function} [config.onResponse = undefined] 
-   * @param {function} [config.onBeforeSave = undefined] 
-   * @param {function} [config.onProgress = undefined] 
-   * @param {function} [config.shouldStop = undefined] 
-   * @param {boolean} [config.shouldBufferResponse = false] 
-   * @param {boolean} [config.useSynchronousMode = false] 
+   * @param {number} [config.timeout=6000]
+   * @param {number} [config.maxAttempts=1]
+   * @param {object} [config.headers = undefined]
+   * @param {object} [config.httpsAgent = undefined]
+   * @param {string} [config.proxy = undefined]
+   * @param {function} [config.onError = undefined]
+   * @param {function} [config.onResponse = undefined]
+   * @param {function} [config.onBeforeSave = undefined]
+   * @param {function} [config.onProgress = undefined]
+   * @param {function} [config.shouldStop = undefined]
+   * @param {boolean} [config.shouldBufferResponse = false]
+   * @param {boolean} [config.useSynchronousMode = false]
    */
   constructor(config) {
 
@@ -77,6 +82,7 @@ module.exports = class Downloader {
 
     const defaultConfig = {
       directory: './',
+      method: 'GET',
       fileName: undefined,
       timeout: 6000,
       maxAttempts: 1,
@@ -121,11 +127,11 @@ module.exports = class Downloader {
    */
   async download() {
     const that = this;
-    const { url, directory, fileName, cloneFiles, skipExistingFileName, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode } = that.config;
+    const { url, method, directory, fileName, cloneFiles, skipExistingFileName, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode } = that.config;
 
-    //Repeat downloading process until success    
+    //Repeat downloading process until success
     await that._makeUntilSuccessful(async () => {
-      const download = new Download({ url, directory, fileName, cloneFiles, skipExistingFileName, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode });
+      const download = new Download({ url, method, directory, fileName, cloneFiles, skipExistingFileName, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode });
       this._currentDownload = download
 
       await download.start();
@@ -136,7 +142,7 @@ module.exports = class Downloader {
 
   /**
    * @param {Function} asyncFunc
-   * @return {Promise<any>} 
+   * @return {Promise<any>}
    */
   async _makeUntilSuccessful(asyncFunc) {
 

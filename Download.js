@@ -20,22 +20,22 @@ const rename = util.promisify(fs.rename)
 module.exports = class Download {
 
     /**
-   * 
-   * @param {object} config 
-   * @param {string} config.url 
-   * @param {string} [config.directory]    
-   * @param {string} [config.fileName = undefined] 
-   * @param {boolean } [config.cloneFiles=true] 
+   *
+   * @param {object} config
+   * @param {string} config.url
+   * @param {string} [config.directory]
+   * @param {string} [config.fileName = undefined]
+   * @param {boolean } [config.cloneFiles=true]
    * @param {boolean} [config.skipExistingFileName = false]
-   * @param {number} [config.timeout=6000]   
-   * @param {object} [config.headers = undefined] 
-   * @param {object} [config.httpsAgent = undefined] 
-   * @param {string} [config.proxy = undefined]   
-   * @param {function} [config.onResponse = undefined] 
-   * @param {function} [config.onBeforeSave = undefined] 
-   * @param {function} [config.onProgress = undefined]   
-   * @param {boolean} [config.shouldBufferResponse = false] 
-   * @param {boolean} [config.useSynchronousMode = false] 
+   * @param {number} [config.timeout=6000]
+   * @param {object} [config.headers = undefined]
+   * @param {object} [config.httpsAgent = undefined]
+   * @param {string} [config.proxy = undefined]
+   * @param {function} [config.onResponse = undefined]
+   * @param {function} [config.onBeforeSave = undefined]
+   * @param {function} [config.onProgress = undefined]
+   * @param {boolean} [config.shouldBufferResponse = false]
+   * @param {boolean} [config.useSynchronousMode = false]
    */
     constructor(config) {
 
@@ -92,14 +92,14 @@ module.exports = class Download {
             const { dataStream, originalResponse } = await this._request();
 
             this.originalResponse = originalResponse;
-           
+
             if (originalResponse.statusCode > 226) {
 
                 const error = await this._createErrorObject(dataStream,originalResponse)
 
                 throw error;
             }
-            
+
             if (this.config.onResponse) {
 
                 const shouldContinue = await this.config.onResponse(originalResponse);
@@ -107,7 +107,7 @@ module.exports = class Download {
                     return;
                 }
             }
-            
+
 
             await this._save({ dataStream, originalResponse })
         } catch (error) {
@@ -136,7 +136,7 @@ module.exports = class Download {
         return error;
     }
 
-   
+
 
 
     async _getStringFromStream(stream) {
@@ -146,8 +146,8 @@ module.exports = class Download {
 
 
     /**
-     * 
-     * @param {string} directory 
+     *
+     * @param {string} directory
      */
     async _verifyDirectoryExists(directory) {
         await mkdir(directory, { recursive: true });
@@ -156,7 +156,7 @@ module.exports = class Download {
 
 
     /**
-     * @return {Promise<{dataStream:stream.Readable,originalResponse:IncomingMessage}}  
+     * @return {Promise<{dataStream:stream.Readable,originalResponse:IncomingMessage}}
      */
     async _request() {
         const { dataStream, originalResponse } = await this._makeRequest();
@@ -168,7 +168,7 @@ module.exports = class Download {
     }
 
     /**
-     * @param {Promise<{dataStream:stream.Readable,originalResponse:IncomingMessage}}  
+     * @param {Promise<{dataStream:stream.Readable,originalResponse:IncomingMessage}}
      * @return {Promise<void>}
      */
     async _save({ dataStream, originalResponse }) {
@@ -215,11 +215,11 @@ module.exports = class Download {
 
 
     /**
-     * 
-     * @return {Promise<{dataStream:stream.Readable,originalResponse:IncomingMessage}}  
+     *
+     * @return {Promise<{dataStream:stream.Readable,originalResponse:IncomingMessage}}
      */
     async _makeRequest() {
-        const { timeout, headers, proxy, url, httpsAgent } = this.config;
+        const { timeout, headers, proxy, url, httpsAgent, method } = this.config;
         const options = {
             timeout,
             headers
@@ -229,6 +229,9 @@ module.exports = class Download {
         }
         else if (proxy) {
             options.agent = new HttpsProxyAgent(proxy)
+        }
+        if (method) {
+            options.method = method;
         }
 
         const { makeRequestIter, cancel, } = makeRequest(url, options)
@@ -241,8 +244,8 @@ module.exports = class Download {
 
 
     /**
-     * 
-     * @param {string} fullPath 
+     *
+     * @param {string} fullPath
      * @return {Promie<WritableStream>}
      */
     _createWriteStream(fullPath) {
@@ -250,9 +253,9 @@ module.exports = class Download {
     }
 
     /**
-     * 
-     * @param {stream.Readable} stream 
-     * @returns 
+     *
+     * @param {stream.Readable} stream
+     * @returns
      */
     async _createBufferFromResponseStream(stream) {
         const chunks = []
@@ -337,8 +340,8 @@ module.exports = class Download {
     }
 
     /**
-     * 
-     * @param {string} finalpath 
+     *
+     * @param {string} finalpath
      */
     _getTempFilePath(finalpath) {
         return `${finalpath}.download`;
@@ -347,7 +350,7 @@ module.exports = class Download {
 
 
     /**
-     * @param {object} responseHeaders 
+     * @param {object} responseHeaders
      */
     async _getFileName(responseHeaders) {
         let originalFileName;
