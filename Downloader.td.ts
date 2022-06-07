@@ -3,7 +3,8 @@ export default Downloader;
 
 
 interface DownloaderConfig{
-    url:string
+    url:string,
+    method?:string,
     directory?:string
     fileName?:string
     cloneFiles?:boolean
