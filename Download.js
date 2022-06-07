@@ -42,6 +42,7 @@ module.exports = class Download {
         const defaultConfig = {
             directory: './',
             fileName: undefined,
+            method: 'GET',
             timeout: 6000,
             useSynchronousMode: false,
             httpsAgent: undefined,
