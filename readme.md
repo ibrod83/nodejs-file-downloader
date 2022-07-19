@@ -53,7 +53,7 @@ const Downloader = require("nodejs-file-downloader");
     directory: "./downloads", //This folder will be created, if it doesn't exist.
   });
   try {
-    await downloader.download(); //Downloader.download() returns a promise.
+    const {filePath,downloadStatus} = await downloader.download(); //Downloader.download() resolves with some useful properties.
 
     console.log("All done");
   } catch (error) {

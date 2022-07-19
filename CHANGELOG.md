@@ -1,3 +1,11 @@
+## 4.10.0 19/07/2022
+
+### Fixed
+- Fixed two vulnerabilities
+
+### Added
+- Downloader.download() now resolves with an object, currently containing two properties: "filePath"(string|null) and "downloadStatus"('COMPLETE'|'ABORTED').
+filePath will be null if the download was interrupted from one of the hooks(In this case, downloadStatus will be "ABORTED").
 
 ## 4.9.3 06/02/2022
 
