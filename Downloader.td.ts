@@ -23,11 +23,17 @@ interface DownloaderConfig{
 
 }
 
+interface DownloaderReport{
+    downloadStatus:"COMPLETE"|"ABORTED"
+    filePath:string|null
+}
+
+
 declare class Downloader {
 
     constructor(config: DownloaderConfig);
 
-    download():Promise<void>
+    download():Promise<DownloaderReport>
 
     cancel():void
 
