@@ -35,7 +35,9 @@ describe('Main tests', () => {
                 expect(r.constructor.name).toBe('IncomingMessage');
             }
         })
-        await downloader.download();
+        const { downloadStatus, filePath } = await downloader.download();
+        expect(downloadStatus).toBe('COMPLETE')
+        expect(filePath).toBe('./downloads/contentType1.jpeg')
         await verifyFile('./downloads/contentType1.jpeg', 23642);
     })
 
@@ -59,8 +61,10 @@ describe('Main tests', () => {
             }
         })
 
-        await downloader.download();
+        const { downloadStatus, filePath } = await downloader.download();
         expect(deducedName).toBe('contentType.jpeg')
+        expect(downloadStatus).toBe('COMPLETE')
+        expect(filePath).toBe('./downloads/contentType.jpeg')
         await verifyFile('./downloads/contentType.jpeg', 23642);
     })
 
@@ -89,7 +93,7 @@ describe('Main tests', () => {
         await verifyFile('./downloads/override.jpg', 23642);
     })
 
-    it ('Should skip same name request', async () => {
+    it('Should skip same name request', async () => {
         let deducedName;
         const host = randomHost()
         let downloadTimes = 0;
@@ -106,26 +110,30 @@ describe('Main tests', () => {
             url: `http://www.${host}.com/contentType`,
             directory: "./downloads",
             fileName: "testfile.jpg",
-            cloneFiles:true
+            cloneFiles: true
         })
 
         const downloader2 = new Downloader({
             url: `http://www.${host}.com/contentType`,
             directory: "./downloads",
             fileName: "testfile.jpg",
-            cloneFiles:true,
-            skipExistingFileName:true
+            cloneFiles: true,
+            skipExistingFileName: true
         })
-      
-        await downloader.download();
-        await downloader2.download();  
+
+        var { downloadStatus, filePath } = await downloader.download();
+        expect(downloadStatus).toBe('COMPLETE')
+        expect(filePath).toBe('./downloads/testfile.jpg')
+        var { downloadStatus, filePath } = await downloader2.download();
+        expect(downloadStatus).toBe('ABORTED')
+        expect(filePath).toBe(null)
         await verifyFile('./downloads/testfile.jpg', 23642);
         expect(downloadTimes).toBe(1);
     })
 
-    it ('Should skip same name request, without config.fileName', async () => {
+    it('Should skip same name request, without config.fileName', async () => {
 
-        const host = randomHost()      
+        const host = randomHost()
         nock(`http://www.${host}.com`)
             .get('/contentType')
             .reply(200, (uri, requestBody) => {
@@ -143,13 +151,17 @@ describe('Main tests', () => {
         const downloader2 = new Downloader({
             url: `http://www.${host}.com/contentType`,
             directory: "./downloads",
-            skipExistingFileName:true
+            skipExistingFileName: true
         })
 
-        await downloader.download();
-        await downloader2.download();
+        var { filePath, downloadStatus } = await downloader.download();
+        expect(filePath).toBe('./downloads/testfile2.jpg')
+        expect(downloadStatus).toBe('COMPLETE')
+        var { filePath, downloadStatus } = await downloader2.download();
+        expect(filePath).toBe(null)
+        expect(downloadStatus).toBe('ABORTED')
         await verifyFile('./downloads/testfile2.jpg', 23642);
-        let error=false;
+        let error = false;
         try {
             //Make sure no clone is present
             await verifyFile('./downloads/testfile2_2.jpg', 23642);
@@ -182,8 +194,12 @@ describe('Main tests', () => {
             skipExistingFileName: true,
             cloneFiles: true
         })
-        await downloader.download();
-        await downloader2.download();
+        var { filePath, downloadStatus } = await downloader.download();
+        expect(filePath).toBe('./downloads/contentType.jpeg')
+        expect(downloadStatus).toBe('COMPLETE')
+        var { filePath, downloadStatus } = await downloader2.download();
+        expect(filePath).toBe(null)
+        expect(downloadStatus).toBe('ABORTED')
         await verifyFile('./downloads/contentType.jpeg', 23642);
         const files = fs.readdirSync('./downloads');
         expect(files.length).toBe(1)
@@ -209,7 +225,7 @@ describe('Main tests', () => {
             }
         })
 
-        await downloader.download();       
+        await downloader.download();
         await verifyFile('./downloads/contentType.jpeg', 23642);
     })
 
@@ -229,7 +245,7 @@ describe('Main tests', () => {
             cloneFiles: false,
             fileName: 'alternativeName.jpg'
         })
-        
+
         await downloader.download();
         await verifyFile('./downloads/alternativeName.jpg', 23642);
     })
@@ -250,7 +266,7 @@ describe('Main tests', () => {
             directory: "./downloads/May/2020",
             cloneFiles: false
         })
-        
+
         await downloader.download();
         await verifyFile('./downloads/May/2020/Desert.jpg', 23642);
     })
@@ -271,7 +287,7 @@ describe('Main tests', () => {
             url: `http://www.${host}.com/Desert.jpg`,
             directory: "./downloads/May/2020",
         })
-        
+
         await downloader.download();
         await verifyFile('./downloads/May/2020/Desert_2.jpg', 23642);
 
@@ -291,7 +307,7 @@ describe('Main tests', () => {
             url: `http://www.${host}.com/Koala.jpg`,
             directory: "./downloads",
         })
-        
+
         await downloader.download();
         await verifyFile('./downloads/Koala.jpg');
     })
@@ -311,7 +327,7 @@ describe('Main tests', () => {
             url: `http://www.${host}.com/Lighthouse.jpg`,
             directory: "./downloads",
         })
-        
+
         await downloader.download();
         await verifyFile('./downloads/Lighthouse.jpg');
     })
@@ -353,7 +369,7 @@ describe('Main tests', () => {
             url: `http://www.${host}.com/Hydrangeas.jpg?width=400&height=300`,
             directory: "./downloads"
         })
-        
+
         await downloader.download();
         await verifyFile('./downloads/Hydrangeas.jpg');
     })
@@ -375,7 +391,7 @@ describe('Main tests', () => {
                 directory: "./downloads",
                 cloneFiles: false
             })
-            
+
             await downloader.download();
             await verifyFile('./downloads/Koala.jpg', 29051);
 
@@ -392,7 +408,7 @@ describe('Main tests', () => {
 
     it('Should download an image, with shouldBufferResponse', async () => {
         const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'));
-  
+
         const chunks = []
         for await (let chunk of stream) {
             chunks.push(chunk)
@@ -418,7 +434,7 @@ describe('Main tests', () => {
                 fileName: 'buffer.jpeg',
                 shouldBufferResponse: true
             })
-            
+
             await downloader.download();
         } catch (error) {
             throw error;
@@ -443,12 +459,13 @@ describe('Main tests', () => {
                     counter++;
                 },
             })
-            
+
             await downloader.download();
+
         } catch (e) {
             debugger;
             error = e
-        } finally{
+        } finally {
             expect(counter).toBe(3)
             expect(error.message).toBe('Request failed with status code 400')
         }
@@ -475,12 +492,12 @@ describe('Main tests', () => {
                     }
                 }
             })
-            
+
             await downloader.download();
         } catch (error) {
             expect(counter).toBe(1);
             expect(error.message).toBe('Request failed with status code 404')
-            expect(error.statusCode).toBe(404);        
+            expect(error.statusCode).toBe(404);
         }
 
     })
@@ -504,7 +521,7 @@ describe('Main tests', () => {
             await downloader.download();
 
         } catch (error) {
-            
+
         } finally {
             expect(onErrorCount).toBe(1)
         }
@@ -534,11 +551,14 @@ describe('Main tests', () => {
         })
 
         let fileExists = false
-        await downloader.download();
+        var { filePath, downloadStatus } = await downloader.download();
+        expect(filePath).toBe(null)
+        expect(downloadStatus).toBe('ABORTED')
+
         try {
             await verifyFile('./downloads/Koala.jpg', 29051);
             fileExists = true//Aint supposed to reach this, verifyFile should throw an error.
-        } catch (error) {}
+        } catch (error) { }
 
         if (fileExists) throw new Error("Download hasn't stopped")
     })
@@ -555,10 +575,10 @@ describe('Main tests', () => {
             timeout: 1000,
             maxAttempts: 4,
             onResponse: function (response) {
-                if (response.headers['message'] !== 'terminate') { 
+                if (response.headers['message'] !== 'terminate') {
                     return;
                 }
-                
+
                 return false;
             },
             fileName: 'yoyo.jpg',
@@ -569,8 +589,8 @@ describe('Main tests', () => {
         try {
             const prom = await downloader.download();
         } catch (error) {
-            
-        } finally {       
+
+        } finally {
             await verifyFile('./downloads/yoyo.jpg', 29051);
         }
     })
@@ -583,14 +603,14 @@ describe('Main tests', () => {
                 return fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'))
             }, { 'message': 'terminate' }).persist()
 
-            let error;
+        let error;
         const downloader = new Downloader({
             timeout: 1000,
             maxAttempts: 4,
             onResponse: function (response) {
                 if (response.headers['message'] === 'terminate') {
                     return false;
-                }               
+                }
                 return false;
             },
             fileName: 'yoyo2.jpg',
@@ -599,18 +619,19 @@ describe('Main tests', () => {
         })
 
         try {
-            const prom = await downloader.download();  
+            const prom = await downloader.download();
+
             await verifyFile('./downloads/yoyo2.jpg', 29051);
         } catch (e) {
-            error=e;            
+            error = e;
         } finally {
-            if(!error.code === 'ENOENT'){
+            if (!error.code === 'ENOENT') {
                 throw error;
             }
         }
     })
 
-    
+
     it('Should get the underlying responseBody an Error, as JSON', async function () {
 
 
@@ -620,7 +641,7 @@ describe('Main tests', () => {
             .reply(400, (uri, requestBody) => {
                 return {
                     customErrorCode: 'SOME_CODE'
-                    
+
                 }
             }, { 'message': 'terminate' }).persist()
 
@@ -639,7 +660,7 @@ describe('Main tests', () => {
 
         } catch (e) {
             const body = e.responseBody;
-            
+
             expect(body.customErrorCode).toBe('SOME_CODE')
         }
     })
@@ -652,8 +673,8 @@ describe('Main tests', () => {
             .get('/Koala.jpg')
             .reply(400, (uri, requestBody) => {
                 return 'SOME_CODE'
-                    
-                
+
+
             }, { 'message': 'terminate' }).persist()
 
         let error;
@@ -671,7 +692,7 @@ describe('Main tests', () => {
 
         } catch (e) {
             const body = e.responseBody;
-            
+
             expect(body).toBe('SOME_CODE')
         }
     })
