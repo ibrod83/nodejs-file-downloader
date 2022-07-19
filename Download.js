@@ -15,7 +15,10 @@ const { isJson } = require('./utils/string');
 const unlink = util.promisify(fs.unlink)
 const rename = util.promisify(fs.rename)
 
-
+const downloadStatusEnum = {
+    COMPLETE:'COMPLETE',
+    ABORTED:"ABORTED"
+}
 
 module.exports = class Download {
 
@@ -75,7 +78,7 @@ module.exports = class Download {
 
     /**
     * The entire download process.
-    * @return {Promise<void>}
+    * @return {Promise<{filePath:string | null,downloadStatus:(keyof downloadStatusEnum)} | void>}
     */
     async start() {
 
@@ -84,7 +87,7 @@ module.exports = class Download {
 
         if (this.config.fileName && this.config.skipExistingFileName) {
             if (await exists(this.config.directory + '/' + this.config.fileName)) {
-                return;
+                return { downloadStatus: downloadStatusEnum.ABORTED, filePath: null }
             }
         }
 
@@ -92,24 +95,25 @@ module.exports = class Download {
             const { dataStream, originalResponse } = await this._request();
 
             this.originalResponse = originalResponse;
-           
+
             if (originalResponse.statusCode > 226) {
 
-                const error = await this._createErrorObject(dataStream,originalResponse)
+                const error = await this._createErrorObject(dataStream, originalResponse)
 
                 throw error;
             }
-            
+
             if (this.config.onResponse) {
 
                 const shouldContinue = await this.config.onResponse(originalResponse);
                 if (shouldContinue === false) {
-                    return;
+                    return { downloadStatus: downloadStatusEnum.ABORTED, filePath: null }
                 }
             }
-            
 
-            await this._save({ dataStream, originalResponse })
+
+            const finalPath = await this._save({ dataStream, originalResponse })
+            return { filePath:finalPath, downloadStatus: finalPath ? downloadStatusEnum.COMPLETE : downloadStatusEnum.ABORTED}
         } catch (error) {
 
             if (this.isCancelled) {
@@ -136,7 +140,7 @@ module.exports = class Download {
         return error;
     }
 
-   
+
 
 
     async _getStringFromStream(stream) {
@@ -169,7 +173,7 @@ module.exports = class Download {
 
     /**
      * @param {Promise<{dataStream:stream.Readable,originalResponse:IncomingMessage}}  
-     * @return {Promise<void>}
+     * @return {Promise<string | null>} finalPath
      */
     async _save({ dataStream, originalResponse }) {
 
@@ -178,7 +182,7 @@ module.exports = class Download {
 
             if (this.config.skipExistingFileName && await exists(this.config.directory + '/' + originalFileName)) {
                 // will skip this request
-                return;
+                return null;
             }
 
             if (this.config.onBeforeSave) {
@@ -199,6 +203,8 @@ module.exports = class Download {
                 await this._saveFromReadableStream(dataStream, tempPath);
             }
             await this._renameTempFileToFinalName(tempPath, finalPath)
+
+            return finalPath;
 
         } catch (error) {
             if (!this.config.shouldBufferResponse)

@@ -117,20 +117,24 @@ module.exports = class Downloader {
 
 
   /**
-   * @return {Promise<void>}
+   * @return {Promise<{filePath:string|null,downloadStatus:"ABORTED"|"COMPLETE"}>}
    */
   async download() {
     const that = this;
     const { url, directory, fileName, cloneFiles, skipExistingFileName, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode } = that.config;
 
     //Repeat downloading process until success    
-    await that._makeUntilSuccessful(async () => {
+    const {filePath,downloadStatus} = await that._makeUntilSuccessful(async () => {
       const download = new Download({ url, directory, fileName, cloneFiles, skipExistingFileName, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode });
       this._currentDownload = download
 
-      await download.start();
+      return await download.start();
 
     })
+
+    return {filePath,downloadStatus}
+
+    debugger;
 
   }
 
