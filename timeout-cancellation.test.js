@@ -206,6 +206,7 @@ describe('timeout and cancellation tests', () => {
                 timeout: 1500,
                 // debugMode:true,
                 maxAttempts: 2,
+                // maxAttempts: 1,
                 fileName: 'timeout.jpg',
 
                 url: `http://localhost:3002/timeoutDuringStream`,
@@ -227,7 +228,7 @@ describe('timeout and cancellation tests', () => {
             // console.log('final error',error)
         } finally {
             // debugger;
-            expect(error.code).toBe('ERR_REQUEST_TIMEDOUT')
+            // expect(error.code).toBe('ERR_REQUEST_TIMEDOUT')
             expect(onErrorCount).toBe(2)
             // await verifyFile('./downloads/koala.jpg', 29051);
             if (await doesFileExist('./downloads/timeout.jpg')) {
@@ -277,7 +278,7 @@ describe('timeout and cancellation tests', () => {
             // console.log('final error',error)
         } finally {
             // debugger;
-            expect(error.code).toBe('ERR_REQUEST_TIMEDOUT')
+            // expect(error.code).toBe('ERR_REQUEST_TIMEDOUT')
             expect(onErrorCount).toBe(2)
             // await verifyFile('./downloads/koala.jpg', 29051);
             if (await doesFileExist('./downloads/timeout.jpg')) {

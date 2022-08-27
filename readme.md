@@ -2,16 +2,6 @@ nodejs-file-downloader is a simple utility for downloading files. It hides the c
 
 If you encounter any bugs or have a question, please don't hesitate to open an issue.
 
-
-```diff
-- Important security notice:
-```
-
-Currently nodejs-file-downloader relies on follow-redirects@1.13.0, which has a security issue: https://github.com/advisories/GHSA-74fj-2j2h-c42q . 
-I did not upgrade to the latest version, because of a bug they have, that causes two of my tests to fail(has to do with timeouts during the file stream).
-I'm waiting for follow-redirects to fix the issue. If you intend to use nodejs-file-downloader as part of some API, that sends a cookie to the download destination- there is some risk. If you do `npm audit fix`, it will be fixed- but nodejs-file-downloader will be less reliable.
-Therefore, use your own discretion before installing nodejs-file-downloader as a dependency of an API. 
-Hope it will be fixed soon :-) 
  
 ## Installation
 

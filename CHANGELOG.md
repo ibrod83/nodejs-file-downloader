@@ -1,3 +1,8 @@
+## 4.10.2 28/08/2022
+
+### Fixed
+- Updated follow-redirects. Timeout during stream bug in follow-redirects creates a socket hangup instead of a timeout event. Adapted timeout tests to be consistent with this behavior. Fails in node 12.
+
 ## 4.10.0 19/07/2022
 
 ### Fixed
