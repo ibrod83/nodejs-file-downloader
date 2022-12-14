@@ -16,7 +16,7 @@ interface DownloaderConfig{
     onError?(e:Error):void
     onResponse?(r:http.IncomingMessage):boolean|void
     onBeforeSave?(finalName:string):string|void
-    onProgress?(percentage:string,chunk:object,remaningSize:number):void
+    onProgress?(percentage:string,chunk:object,remainingSize:number):void
     shouldStop?(e:Error):boolean|void
     shouldBufferResponse?:boolean
     useSynchronousMode?:boolean
