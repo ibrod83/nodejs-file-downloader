@@ -1,6 +1,6 @@
 {
   "name": "nodejs-file-downloader",
-  "version": "4.10.2",
+  "version": "4.10.3",
   "description": "A file downloader for NodeJs",
   "main": "Downloader.js",
   "scripts": {

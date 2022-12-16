@@ -1,3 +1,8 @@
+## 4.10.3 16/12/2022
+
+### Fixed
+- Fixed a typo in Downloader.td.ts
+
 ## 4.10.2 28/08/2022
 
 ### Fixed
