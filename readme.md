@@ -2,6 +2,8 @@ nodejs-file-downloader is a simple utility for downloading files. It hides the c
 
 In case you encounter any bugs or have a question, please don't hesitate to open an issue.
 
+[If you like the program and want to support me for my work, you can buy me &#x2615;](https://ko-fi.com/ibrod83)
+
  
 ## Installation
 
