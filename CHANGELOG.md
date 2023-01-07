@@ -1,3 +1,11 @@
+## 4.10.5 07/01/2023
+
+### Fixed
+- Fixed vulnerabilities
+
+### Changed
+- Changed CI tests to node versions 16,18
+
 ## 4.10.3 16/12/2022
 
 ### Fixed
