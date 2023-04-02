@@ -7,15 +7,14 @@ var HttpsProxyAgent = require('https-proxy-agent');
 const { Transform } = require('stream')
 const util = require('util');
 const FileProcessor = require('./utils/FileProcessor');
-const pipelinePromisified = util.promisify(stream.pipeline);
 const mkdir = util.promisify(fs.mkdir);
 const writeFile = util.promisify(fs.writeFile);
-const { deduceFileName, exists } = require('./utils/fileName');
+const { deduceFileName, exists, getTempFilePath } = require('./utils/fileName');
 const { isJson } = require('./utils/string');
-const { isDataUrl, getDataUrlExtension } = require('./utils/url');
+const { isDataUrl } = require('./utils/url');
 const unlink = util.promisify(fs.unlink)
 const rename = util.promisify(fs.rename)
-const crypto = require('crypto');
+const { bufferToReadableStream, createWriteStream, createBufferFromResponseStream, pipeStreams, getStringFromStream } = require('./utils/stream');
 
 
 const downloadStatusEnum = {
@@ -85,26 +84,21 @@ module.exports = class Download {
     */
     async start() {
 
-        await this._verifyDirectoryExists(this.config.directory)//need
+        await this._verifyDirectoryExists(this.config.directory)
 
-        if(await this._shouldSkipRequest()){//need
+        if(await this._shouldSkipRequest()){
             return { downloadStatus: downloadStatusEnum.ABORTED, filePath: null }
         }
 
         try {
-            // const isDurl = isDataUrl(this.config.url)
-            // if (isDurl) {
-            //     const fileName = this.config.fileName || this._getDataUrlFileName(this.config.url)
-            //     const finalPath = await this._saveDataUrl(this.config.url)
-            //     return { filePath:finalPath, downloadStatus: finalPath ? downloadStatusEnum.COMPLETE : downloadStatusEnum.ABORTED}
-            // }
-            const { dataStream, originalResponse } = await this._request();//dont need
 
-            this.originalResponse = originalResponse;//dont need
+            const { dataStream, originalResponse } = await this._request();
 
-            await this._handlePossibleStatusCodeError({dataStream, originalResponse})//dont need
+            this.originalResponse = originalResponse;
 
-            if (this.config.onResponse) {//dont need
+            await this._handlePossibleStatusCodeError({dataStream, originalResponse})
+
+            if (this.config.onResponse) {
 
                 const shouldContinue = await this.config.onResponse(originalResponse);
                 if (shouldContinue === false) {
@@ -112,11 +106,11 @@ module.exports = class Download {
                 }
             }
 
-            let { finalFileName, originalFileName } = await this._getFileName(originalResponse.headers);//need
+            let { finalFileName, originalFileName } = await this._getFileName(originalResponse.headers);
 
-            const finalPath = await this._getFinalPath({dataStream, finalFileName, originalFileName})//need
+            const finalPath = await this._getFinalPath({dataStream, finalFileName, originalFileName})
 
-            return { filePath: finalPath, downloadStatus: finalPath ? downloadStatusEnum.COMPLETE : downloadStatusEnum.ABORTED }//need
+            return { filePath: finalPath, downloadStatus: finalPath ? downloadStatusEnum.COMPLETE : downloadStatusEnum.ABORTED }
         } catch (error) {
 
             if (this.isCancelled) {
@@ -129,13 +123,6 @@ module.exports = class Download {
 
     }
 
-    // async _saveDataUrl(url) {
-    //     const base64Data = url.replace(/^data:image\/png;base64,/, "");
-    //     const fileName = this._getFileName(url)
-    //     const finalPath = this.config.directory + '/' + fileName
-    //     await writeFile(finalPath, base64Data, 'base64')
-    //     return finalPath
-    // }
 
     async _shouldSkipRequest() {        
         if (this.config.fileName && this.config.skipExistingFileName) {
@@ -146,6 +133,12 @@ module.exports = class Download {
         return false
     }
 
+    /**
+     * 
+     * @param {Object} obj 
+     * @param {stream.Readable} obj.dataStream 
+     * @param {http.IncomingMessage} obj.originalResponse
+     */
     async _handlePossibleStatusCodeError({dataStream, originalResponse}){
         if (originalResponse.statusCode > 226) {
 
@@ -156,7 +149,7 @@ module.exports = class Download {
     }
 
     async _createErrorObject(dataStream, originalResponse) {
-        const responseString = await this._getStringFromStream(dataStream);
+        const responseString = await getStringFromStream(dataStream);
 
         const error = new Error(`Request failed with status code ${originalResponse.statusCode}`)
 
@@ -170,10 +163,7 @@ module.exports = class Download {
     }
 
 
-    async _getStringFromStream(stream) {
-        const buffer = await this._createBufferFromResponseStream(stream);
-        return buffer.toString();
-    }
+    
 
     /**
      * 
@@ -200,6 +190,10 @@ module.exports = class Download {
         }
     }
 
+    /**
+     * @param {string} dataUrl
+     * @return {Promise<{dataStream:stream.Readable,originalResponse:IncomingMessage}}  
+     */
     _mimic_RequestForDataUrl(dataUrl) {
         const mimeType = dataUrl.match(/data:([^;]+);/)[1];
         const base64Data = dataUrl.replace(/^data:[^;]+;base64,/, '');
@@ -219,6 +213,7 @@ module.exports = class Download {
         return { dataStream, originalResponse };
     }
 
+  
    async _getFinalPath({ dataStream, finalFileName, originalFileName }) {
 
         let finalPath
@@ -253,13 +248,13 @@ module.exports = class Download {
      */
     _getTempAndFinalPath(finalFileName) {
         const finalPath = `${this.config.directory}/${finalFileName}`;
-        var tempPath = this._getTempFilePath(finalPath);
+        var tempPath = getTempFilePath(finalPath);
         return { finalPath, tempPath }
     }
 
     async _saveAccordingToConfig({ dataStream, tempPath }) {
         if (this.config.shouldBufferResponse) {
-            const buffer = await this._createBufferFromResponseStream(dataStream);
+            const buffer = await createBufferFromResponseStream(dataStream);
             await this._saveFromBuffer(buffer, tempPath);
         } else {
             await this._saveFromReadableStream(dataStream, tempPath);
@@ -329,33 +324,7 @@ module.exports = class Download {
         const { dataStream, originalResponse, } = await makeRequestIter()
 
         return { dataStream, originalResponse }
-    }
-
-
-
-    /**
-     * 
-     * @param {string} fullPath 
-     * @return {Promie<WritableStream>}
-     */
-    _createWriteStream(fullPath) {
-        return fs.createWriteStream(fullPath)
-    }
-
-    /**
-     * 
-     * @param {stream.Readable} stream 
-     * @returns 
-     */
-    async _createBufferFromResponseStream(stream) {
-        const chunks = []
-        for await (let chunk of stream) {
-            chunks.push(chunk)
-        }
-
-        const buffer = Buffer.concat(chunks)
-        return buffer;
-    }
+    }   
 
 
     _getProgressStream() {
@@ -387,33 +356,19 @@ module.exports = class Download {
         return progress;
 
     }
-
-
-
-
-
-
-
-    async _pipeStreams(arrayOfStreams) {
-        await pipelinePromisified(...arrayOfStreams);
-    }
-
-
+  
 
     async _saveFromReadableStream(read, path) {
         const streams = [read];
-        const write = this._createWriteStream(path)
+        const write = createWriteStream(path)
         if (this.config.onProgress) {
             const progressStream = this._getProgressStream()
             streams.push(progressStream);
 
         }
         streams.push(write)
-        await this._pipeStreams(streams)
-
-
+        await pipeStreams(streams)
     }
-
 
 
     async _saveFromBuffer(buffer, path) {
@@ -429,27 +384,7 @@ module.exports = class Download {
         await rename(temp, final)
     }
 
-    /**
-     * 
-     * @param {string} finalpath 
-     */
-    _getTempFilePath(finalpath) {
-        return `${finalpath}.download`;
-    }
-
-    /**
-     * 
-     * @param {string} url 
-     */
-    _getDataUrlFileName(url) {
-        const extension = getDataUrlExtension(url);
-        const split = url.split(';base64,');
-
-        var base64Data = split[1]
-        const fileName = crypto.createHash('md5').update(base64Data).digest("hex") + "." + extension;
-        return fileName;
-    }
-
+   
     /**
      * @param {object} responseHeaders 
      */
@@ -480,21 +415,5 @@ module.exports = class Download {
 
             this.cancelCb()
         }
-
-
     }
 }
-
-
-
-
-function bufferToReadableStream(buffer) {
-    const readable = new stream.Readable({
-      read() {
-        this.push(buffer);
-        this.push(null); // Indicates the end of the stream
-      },
-    });
-  
-    return readable;
-  }

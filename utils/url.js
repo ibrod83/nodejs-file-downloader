@@ -19,4 +19,5 @@ function getDataUrlExtension(dataurl) {
     return dataurl.split('/')[1].split(';')[0]
 }
 
+
 module.exports = {isDataUrl,getDataUrlExtension}

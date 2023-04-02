@@ -2,11 +2,7 @@ const sanitize = require('sanitize-filename');
 const path = require('path');
 var mime = require('mime-types')
 const { promises: Fs } = require('fs')
-
-
-
-
-
+const crypto = require('crypto');
 
 
 /**
@@ -32,7 +28,6 @@ function deduceFileName(url, headers) {
 
   //First option
   const fileNameFromContentDisposition = getFileNameFromContentDisposition(headers['content-disposition'] || headers['Content-Disposition']);
-  // console.log('filenamecontentdisposition', fileNameFromContentDisposition)
   if (fileNameFromContentDisposition) return fileNameFromContentDisposition;
 
   //Second option
@@ -59,8 +54,7 @@ function removeQueryString(url) {
 
 function getFileNameFromContentType(contentType, url) {
 
-  // var contentType = this.response.headers['content-type'] || this.response.headers['Content-Type'];
-  // console.log(contentType)
+
   let extension = mime.extension(contentType)
 
   url = removeQueryString(url);
@@ -103,4 +97,15 @@ async function exists(path) {
   }
 }
 
-module.exports = { deduceFileName, exists }
+ /**
+     * 
+     * @param {string} finalpath 
+     */
+ function getTempFilePath(finalpath) {
+  return `${finalpath}.download`;
+}
+
+
+
+
+module.exports = { deduceFileName, exists,getTempFilePath }

@@ -100,7 +100,6 @@ module.exports = makeRequest;
  */
 function abort(request) {
     const majorNodeVersion = process.versions.node.split('.')[0];
-    // debugger
     if (!majorNodeVersion || majorNodeVersion < 14) {
         request.abort()
 

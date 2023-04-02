@@ -69,7 +69,6 @@ module.exports = class Downloader {
    */
   constructor(config) {
 
-    // super();
     if (!config || typeof config !== 'object') {
       throw new Error('Must provide a valid config object')
     }
@@ -134,7 +133,6 @@ module.exports = class Downloader {
 
     return {filePath,downloadStatus}
 
-    debugger;
 
   }
 
@@ -157,7 +155,6 @@ module.exports = class Downloader {
       },
       shouldStop: async (e) => {
 
-        // console.log('e from shouldstop',e)
         if (e.code === 'ERR_REQUEST_CANCELLED')//Means the request was cancelled, therefore no repetition is required.
           return true;
 

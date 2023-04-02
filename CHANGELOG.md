@@ -1,3 +1,8 @@
+## 4.11.0 02/04/2023
+
+### Added
+- Added support for Data URI
+
 ## 4.10.6 07/01/2023
 
 ### Added
