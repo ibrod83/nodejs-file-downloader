@@ -72,7 +72,7 @@ describe('timeout and cancellation tests', () => {
             if (await doesFileExist('./downloads/cancelled.jpg')) {
                 throw new Error('cancelled.jpg was not deleted')
             }
-            if (await doesFileExist('./downloads/cancelled.jpg')) {
+            if (await doesFileExist('./downloads/cancelled.jpg.download')) {
                 throw new Error('cancelled.jpg.download was not deleted')
             }
         }
