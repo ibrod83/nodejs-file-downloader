@@ -276,7 +276,7 @@ module.exports = class Download {
      * @return {Promise<string>} finalPath
      */
     async _save({ dataStream, finalFileName, originalFileName }) {
-
+        let tempP
         try {
 
             if (await this._shouldSkipSaving(originalFileName)) {
@@ -286,7 +286,7 @@ module.exports = class Download {
             finalFileName = await this._handleOnBeforeSave(finalFileName)
 
             const { finalPath, tempPath } = this._getTempAndFinalPath(finalFileName)
-
+            tempP = tempPath
             await this._saveAccordingToConfig({ dataStream, tempPath })
 
             await this._renameTempFileToFinalName(tempPath, finalPath)
@@ -295,7 +295,7 @@ module.exports = class Download {
 
         } catch (error) {
             if (!this.config.shouldBufferResponse)
-                await this._removeFailedFile(tempPath)
+                await this._removeFailedFile(tempP)
 
             throw error;
         }

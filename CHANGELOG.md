@@ -1,3 +1,9 @@
+## 4.11.1 16/04/2023
+
+### Fixed
+- Fixed tempPath scope in removeFailedFile call
+
+
 ## 4.11.0 02/04/2023
 
 ### Added
