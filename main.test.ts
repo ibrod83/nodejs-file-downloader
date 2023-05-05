@@ -1,12 +1,13 @@
-const expect = require('expect')
+const expect = require('expect');
 const fs = require('fs');
 const Path = require('path');
-const rimraf = require('rimraf')
-const Downloader = require('./Downloader');
+const rimraf = require('rimraf');
 const { Readable } = require('stream');
-const nock = require('nock')
+const nock = require('nock');
+import Downloader from './src/Downloader';
 
 describe('Main tests', () => {
+    //@ts-ignore
     before((done) => {
         rimraf.sync("./downloads");
         done();
@@ -27,7 +28,7 @@ describe('Main tests', () => {
         const { downloadStatus, filePath } = await downloader.download();
         expect(downloadStatus).toBe('COMPLETE')
         expect(filePath).toBe('./downloads/9k=.jpeg')
-        await verifyFile(filePath, 2339 );
+        await verifyFile(filePath as string, 2339 );
     })
 
     it('Should download a picture from data URI, with custom name', async () => {
@@ -49,7 +50,7 @@ describe('Main tests', () => {
         const { downloadStatus, filePath } = await downloader.download();
         expect(downloadStatus).toBe('COMPLETE')
         expect(filePath).toBe('./downloads/buba2.jpeg')
-        await verifyFile(filePath, 2339 );
+        await verifyFile(filePath as  string, 2339 );
     })
 
     it('Should download a picture and use content-type', async () => {
@@ -67,6 +68,7 @@ describe('Main tests', () => {
             directory: "./downloads",
             cloneFiles: false,
             onProgress: (p, chunk) => {
+                //@ts-ignore
                 expect(!isNaN(parseFloat(p)) && isFinite(p)).toBe(true)
                 expect(Object.getPrototypeOf(chunk).constructor.name).toBe('Buffer')
             },
@@ -451,7 +453,7 @@ describe('Main tests', () => {
     it('Should download an image, with shouldBufferResponse', async () => {
         const stream = fs.createReadStream(Path.join(__dirname, 'fixtures/Koala.jpg'));
 
-        const chunks = []
+        const chunks :any[] = []
         for await (let chunk of stream) {
             chunks.push(chunk)
         }
@@ -486,13 +488,14 @@ describe('Main tests', () => {
     })
 
     it('Should repeat a request few times and fail', async () => {
+        var counter = 0;
         const host = randomHost()
         nock(`http://www.${host}.com`)
             .get('/400')
             .reply(400).persist()
         var error;
         try {
-            var counter = 0;
+          
             const downloader = new Downloader({
                 url: `http://www.${host}.com/400`,
                 directory: "./downloads",
@@ -514,13 +517,14 @@ describe('Main tests', () => {
     })
 
     it('Should repeat fail after first attempt, because of shouldStop hook', async () => {
+        var counter = 0;
         const host = randomHost()
         nock(`http://www.${host}.com`)
             .get('/404')
             .reply(404).persist()
 
         try {
-            var counter = 0;
+           
             const downloader = new Downloader({
                 url: `http://www.${host}.com/404`,
                 directory: "./downloads",
@@ -528,7 +532,7 @@ describe('Main tests', () => {
                 onError: function () {
                     counter++;
                 },
-                shouldStop: function (e) {
+                shouldStop: function (e:any) {
                     if (e.statusCode && e.statusCode === 404) {
                         return true;
                     }
@@ -664,9 +668,10 @@ describe('Main tests', () => {
             const prom = await downloader.download();
 
             await verifyFile('./downloads/yoyo2.jpg', 29051);
-        } catch (e) {
+        } catch (e:any) {
             error = e;
         } finally {
+            //@ts-ignore
             if (!error.code === 'ENOENT') {
                 throw error;
             }
@@ -751,8 +756,8 @@ function randomHost(length = 5) {
     return result;
 }
 
-function timeout(mil) {
-    return new Promise((res) => {
+function timeout(mil:number) {
+    return new Promise<void>((res) => {
         setTimeout(() => {
             res();
         }, mil)
@@ -764,8 +769,8 @@ function timeout(mil) {
     * @param {string} path
     * @param {number} [size]
     */
-function verifyFile(path, size) {
-    return new Promise((resolve, reject) => {
+function verifyFile(path:string, size?:number) {
+    return new Promise<void>((resolve, reject) => {
         fs.readFile(path, (err, data) => {
             if (err)
                 return reject(err);

@@ -1,3 +1,4 @@
+//@ts-ignore
 const expect = require('expect')
 // const request = require('supertest');
 const { app, server } = require('./testServer');
@@ -7,10 +8,12 @@ const { app, server } = require('./testServer');
 const fs = require('fs');
 const Path = require('path');
 const rimraf = require('rimraf')
-const Downloader = require('./Downloader');
 const { Readable } = require('stream');
+const Downloader: typeof import('./src/Downloader') = require('./src/Downloader');
+
 describe('timeout and cancellation tests', () => {
    
+    //@ts-ignore
     before((done) => {
         rimraf.sync("./downloads");
         // console.log('done')
@@ -18,6 +21,7 @@ describe('timeout and cancellation tests', () => {
         done();
     })
 
+    //@ts-ignore
     after((done) => {
         if(server){
           server.close();  
@@ -37,6 +41,7 @@ describe('timeout and cancellation tests', () => {
             timeout: 50000,
             url: `http://localhost:3002/cancelWhileStream`,
             directory: "./downloads",
+            //@ts-ignore
             onResponse() {
                 // debugger
                 // downloader.cancel()
@@ -91,6 +96,7 @@ describe('timeout and cancellation tests', () => {
             timeout: 50000,
             url: `http://localhost:3002/cancelBeforeStream`,
             directory: "./downloads",
+            //@ts-ignore
             onResponse(r) {
                 // console.log('response!')
                 // debugger
@@ -145,6 +151,7 @@ describe('timeout and cancellation tests', () => {
             shouldBufferResponse: true,
             url: `http://localhost:3002/cancelWhileStream`,
             directory: "./downloads",
+            //@ts-ignore
             onResponse() {
                 // debugger
                 // downloader.cancel()
@@ -197,10 +204,11 @@ describe('timeout and cancellation tests', () => {
     it('Should timeout during stream, twice', async function () {
         let error;
         this.timeout(0)
+        var onErrorCount = 0
         try {
             // let counter = 0
 
-            var onErrorCount = 0
+           
 
             const downloader = new Downloader({
                 timeout: 1500,
@@ -247,10 +255,11 @@ describe('timeout and cancellation tests', () => {
     it('Should timeout during stream, twice, with shouldBufferResponse', async function () {
         let error;
         this.timeout(0)
+        var onErrorCount = 0
         try {
             // let counter = 0
 
-            var onErrorCount = 0
+         
 
             const downloader = new Downloader({
                 timeout: 1500,
@@ -297,10 +306,11 @@ describe('timeout and cancellation tests', () => {
     it('Should timeout before response', async function () {
         let error;
         this.timeout(0)
+        var onErrorCount = 0
         try {
             // let counter = 0
 
-            var onErrorCount = 0
+      
 
             const downloader = new Downloader({
                 timeout: 1500,

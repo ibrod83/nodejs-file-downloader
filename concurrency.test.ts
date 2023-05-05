@@ -1,12 +1,14 @@
+//@ts-ignore
+const Downloader: typeof import('./src/Downloader') = require('./src/Downloader');
+//@ts-ignore
 const expect = require('expect');
 const { app, server } = require('./testServer');
-
-
 const fs = require('fs');
 const Path = require('path');
 const rimraf = require('rimraf')
-const Downloader = require('./Downloader');
-const { Readable } = require('stream');
+const { Readable } = require('stream');//
+// import Downloader from './src/Downloader';
+
 const e = require('express');
 describe('concurrency tests', () => {
     beforeEach((done) => {
@@ -14,6 +16,7 @@ describe('concurrency tests', () => {
         done();
     })
 
+    //@ts-ignore
     after((done) => {
         done();
     })
@@ -41,7 +44,9 @@ describe('concurrency tests', () => {
         const promises = [];
         for (let i = 0; i < 500; i++) {
             const name = makeid(10) + '.jpg';
+            //@ts-ignore
             names.push(name);
+            //@ts-ignore
             promises.push(makeDownload(name))
         }
         await Promise.all(promises);
@@ -74,7 +79,9 @@ describe('concurrency tests', () => {
         const promises = []
         for (let i = 0; i < 1000; i++) {
             const name = 'someName' + '.jpg';
+            //@ts-ignore
             names.push(name);
+            //@ts-ignore
             promises.push(makeDownload(name));
         }
         await Promise.all(promises);
