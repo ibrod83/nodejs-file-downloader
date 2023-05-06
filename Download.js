@@ -9,7 +9,7 @@ const util = require('util');
 const FileProcessor = require('./utils/FileProcessor');
 const mkdir = util.promisify(fs.mkdir);
 const writeFile = util.promisify(fs.writeFile);
-const { deduceFileName, exists, getTempFilePath } = require('./utils/fileName');
+const { deduceFileName, exists, getTempFilePath, deduceFileNameFromUrlAndHeaders } = require('./utils/fileName');
 const { isJson } = require('./utils/string');
 const { isDataUrl } = require('./utils/url');
 const unlink = util.promisify(fs.unlink)
@@ -86,7 +86,7 @@ module.exports = class Download {
 
         await this._verifyDirectoryExists(this.config.directory)
 
-        if(await this._shouldSkipRequest()){
+        if (await this._shouldSkipRequest()) {
             return { downloadStatus: downloadStatusEnum.ABORTED, filePath: null }
         }
 
@@ -96,7 +96,7 @@ module.exports = class Download {
 
             this.originalResponse = originalResponse;
 
-            await this._handlePossibleStatusCodeError({dataStream, originalResponse})
+            await this._handlePossibleStatusCodeError({ dataStream, originalResponse })
 
             if (this.config.onResponse) {
 
@@ -106,11 +106,54 @@ module.exports = class Download {
                 }
             }
 
+
+            //if config.fileName was provided, use it, otherwise deduce it from the response headers.
+            //check if such a fileName already exists
+            //if it does, do one of the following:
+            //if config.skipExistingFileName is true, abort the download
+            //if not continue as planned, but based on the config.cloneFiles value, either clone the file or overwrite it.
+            //finally, call the onBeforeSave callback if it was provided. This is the final source for the file name.
+            fileNameToUse = ""
+            if (this.config.fileName) {
+                fileNameToUse = this.config.fileName
+
+            } else {
+                var { finalFileName, originalFileName } = this._getFileName(originalResponse.headers);
+                const fileExists = await exists(`${this.config.directory}/${finalFileName}`)
+                if (this.config.cloneFiles === true) {
+                    var fileProcessor = new FileProcessor({ useSynchronousMode: this.config.useSynchronousMode, fileName: originalFileName, path: this.config.directory })
+
+                    finalFileName = await fileProcessor.getAvailableFileName()
+                } else {
+                    finalFileName = originalFileName
+                }
+            }
             let { finalFileName, originalFileName } = await this._getFileName(originalResponse.headers);
 
-            const finalPath = await this._getFinalPath({dataStream, finalFileName, originalFileName})
+            var { finalPath, tempPath } = this._getTempAndFinalPath(finalFileName)
 
-            return { filePath: finalPath, downloadStatus: finalPath ? downloadStatusEnum.COMPLETE : downloadStatusEnum.ABORTED }
+
+
+            if (this.config.skipExistingFileName && await exists(finalPath)) {
+                return { downloadStatus: downloadStatusEnum.ABORTED, filePath: null }
+            }
+
+            const report = {}
+
+            // if (!await this._shouldSkipSaving(finalFileName)) {
+            // if (!await this._shouldSkipSaving(originalFileName)) {
+            await this._save({ dataStream, finalPath, tempPath })
+            report.downloadStatus = downloadStatusEnum.COMPLETE;
+            report.filePath = finalPath;
+            // }
+            // else{
+            // report.downloadStatus = downloadStatusEnum.ABORTED;
+            // report.filePath = null;
+            // }
+
+
+            // return { filePath: finalPath, downloadStatus: finalPath ? downloadStatusEnum.COMPLETE : downloadStatusEnum.ABORTED }
+            return report;
         } catch (error) {
 
             if (this.isCancelled) {
@@ -124,7 +167,7 @@ module.exports = class Download {
     }
 
 
-    async _shouldSkipRequest() {        
+    async _shouldSkipRequest() {
         if (this.config.fileName && this.config.skipExistingFileName) {
             if (await exists(this.config.directory + '/' + this.config.fileName)) {
                 return true
@@ -139,7 +182,7 @@ module.exports = class Download {
      * @param {stream.Readable} obj.dataStream 
      * @param {http.IncomingMessage} obj.originalResponse
      */
-    async _handlePossibleStatusCodeError({dataStream, originalResponse}){
+    async _handlePossibleStatusCodeError({ dataStream, originalResponse }) {
         if (originalResponse.statusCode > 226) {
 
             const error = await this._createErrorObject(dataStream, originalResponse)
@@ -163,7 +206,7 @@ module.exports = class Download {
     }
 
 
-    
+
 
     /**
      * 
@@ -181,7 +224,7 @@ module.exports = class Download {
         if (isDataUrl(this.config.url)) {
             return this._mimic_RequestForDataUrl(this.config.url);
         }
-         else {
+        else {
             const { dataStream, originalResponse } = await this._makeRequest();
             const headers = originalResponse.headers;
             const contentLength = headers['content-length'] || headers['Content-Length'];
@@ -213,18 +256,16 @@ module.exports = class Download {
         return { dataStream, originalResponse };
     }
 
-  
-   async _getFinalPath({ dataStream, finalFileName, originalFileName }) {
+
+    async _getFinalPath({ dataStream, finalFileName, originalFileName }) {
 
         let finalPath
 
-        const shouldSkipSaving = await this._shouldSkipSaving(originalFileName)
+        // const shouldSkipSaving = await this._shouldSkipSaving(originalFileName)
 
-        if (!shouldSkipSaving) {
-            finalPath = await this._save({ dataStream, finalFileName, originalFileName });
-        } else {
-            finalPath = null
-        }
+        // if (!shouldSkipSaving) {
+        finalPath = await this._save({ dataStream, finalFileName, originalFileName });
+        //  
         return finalPath
     }
 
@@ -261,37 +302,41 @@ module.exports = class Download {
         }
     }
 
+    /**
+     * 
+     * @param {string} finalFileName 
+     */
     async _handleOnBeforeSave(finalFileName) {
         if (this.config.onBeforeSave) {
-            const clientOverideName = await this.config.onBeforeSave(finalFileName)
-            if (clientOverideName && typeof clientOverideName === 'string') {
-                finalFileName = clientOverideName;
+            const clientOverrideName = await this.config.onBeforeSave(finalFileName)
+            if (clientOverrideName && typeof clientOverrideName === 'string') {
+                finalFileName = clientOverrideName;
             }
         }
         return finalFileName
     }
 
     /**
-     * @param {Promise<{dataStream:stream.Readable,finalFileName:string,originalFileName:string}}  
-     * @return {Promise<string>} finalPath
+     * @param {{dataStream:stream.Readable,finalPath:string,tempPath:string}}    
      */
-    async _save({ dataStream, finalFileName, originalFileName }) {
-   
+    // async _save({ dataStream, finalFileName, originalFileName }) {
+    async _save({ dataStream, finalPath, tempPath }) {
+
         try {
 
-            if (await this._shouldSkipSaving(originalFileName)) {
-                return null;
-            }
+            // if (await this._shouldSkipSaving(originalFileName)) {
+            //     return null;
+            // }
 
-            finalFileName = await this._handleOnBeforeSave(finalFileName)
+            // finalFileName = await this._handleOnBeforeSave(finalFileName)
 
-            var { finalPath, tempPath } = this._getTempAndFinalPath(finalFileName)
+            // var { finalPath, tempPath } = this._getTempAndFinalPath(fileName)
 
             await this._saveAccordingToConfig({ dataStream, tempPath })
 
             await this._renameTempFileToFinalName(tempPath, finalPath)
 
-            return finalPath;
+            // return finalPath;
 
         } catch (error) {
             if (!this.config.shouldBufferResponse)
@@ -324,7 +369,7 @@ module.exports = class Download {
         const { dataStream, originalResponse, } = await makeRequestIter()
 
         return { dataStream, originalResponse }
-    }   
+    }
 
 
     _getProgressStream() {
@@ -356,7 +401,7 @@ module.exports = class Download {
         return progress;
 
     }
-  
+
 
     async _saveFromReadableStream(read, path) {
         const streams = [read];
@@ -384,27 +429,29 @@ module.exports = class Download {
         await rename(temp, final)
     }
 
-   
+
     /**
      * @param {object} responseHeaders 
      */
-    async _getFileName(responseHeaders) {
+    _getFileName(responseHeaders) {
         let originalFileName;
         let finalFileName;
         if (this.config.fileName) {
             originalFileName = this.config.fileName
         } else {
-            originalFileName = deduceFileName(this.config.url, responseHeaders)
+            originalFileName = deduceFileNameFromUrlAndHeaders(this.config.url, responseHeaders)
         }
 
-        if (this.config.cloneFiles === true) {
-            var fileProcessor = new FileProcessor({ useSynchronousMode: this.config.useSynchronousMode, fileName: originalFileName, path: this.config.directory })
+        // if (this.config.cloneFiles === true) {
+        //     var fileProcessor = new FileProcessor({ useSynchronousMode: this.config.useSynchronousMode, fileName: originalFileName, path: this.config.directory })
 
-            finalFileName = await fileProcessor.getAvailableFileName()
-        } else {
-            finalFileName = originalFileName
-        }
+        //     finalFileName = await fileProcessor.getAvailableFileName()
+        // } else {
+        //     finalFileName = originalFileName
+        // }
 
+
+        // finalFileName = await this._handleOnBeforeSave(finalFileName)
         return { finalFileName, originalFileName };
     }
 

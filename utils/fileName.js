@@ -24,7 +24,7 @@ function deduceFileNameFromUrl(url) {
  * @param {Object} headers
  * @return {string} fileName
  */
-function deduceFileName(url, headers) {
+function deduceFileNameFromUrlAndHeaders(url, headers) {
 
   //First option
   const fileNameFromContentDisposition = getFileNameFromContentDisposition(headers['content-disposition'] || headers['Content-Disposition']);
@@ -108,4 +108,4 @@ async function exists(path) {
 
 
 
-module.exports = { deduceFileName, exists,getTempFilePath }
+module.exports = { deduceFileNameFromUrlAndHeaders, exists,getTempFilePath }
