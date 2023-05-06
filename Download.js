@@ -108,7 +108,7 @@ module.exports = class Download {
 
             let { finalFileName, originalFileName } = await this._getFileName(originalResponse.headers);
 
-            const finalPath = await this._getFinalPath({dataStream, finalFileName, originalFileName})
+            const finalPath = await this._save({dataStream, finalFileName, originalFileName})
 
             return { filePath: finalPath, downloadStatus: finalPath ? downloadStatusEnum.COMPLETE : downloadStatusEnum.ABORTED }
         } catch (error) {
@@ -213,21 +213,6 @@ module.exports = class Download {
         return { dataStream, originalResponse };
     }
 
-  
-   async _getFinalPath({ dataStream, finalFileName, originalFileName }) {
-
-        let finalPath
-
-        const shouldSkipSaving = await this._shouldSkipSaving(originalFileName)
-
-        if (!shouldSkipSaving) {
-            finalPath = await this._save({ dataStream, finalFileName, originalFileName });
-        } else {
-            finalPath = null
-        }
-        return finalPath
-    }
-
 
     /**
      * 
@@ -272,7 +257,7 @@ module.exports = class Download {
     }
 
     /**
-     * @param {Promise<{dataStream:stream.Readable,finalFileName:string,originalFileName:string}}  
+     * @param {{dataStream:stream.Readable,finalFileName:string,originalFileName:string}}  
      * @return {Promise<string>} finalPath
      */
     async _save({ dataStream, finalFileName, originalFileName }) {

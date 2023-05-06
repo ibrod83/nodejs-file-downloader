@@ -12,6 +12,9 @@ describe('Main tests', () => {
         done();
     })
 
+   
+
+
     it('Should download a picture from data URI', async () => {
 
         const downloader = new Downloader({
@@ -27,13 +30,13 @@ describe('Main tests', () => {
         const { downloadStatus, filePath } = await downloader.download();
         expect(downloadStatus).toBe('COMPLETE')
         expect(filePath).toBe('./downloads/9k=.jpeg')
-        await verifyFile(filePath, 2339 );
+        await verifyFile(filePath, 2339);
     })
 
     it('Should download a picture from data URI, with custom name', async () => {
 
         const downloader = new Downloader({
-            fileName:"buba.jpeg",
+            fileName: "buba.jpeg",
             url: `data:image/jpeg;base64,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`,
             directory: "./downloads",
             onProgress: (p, chunk) => {
@@ -43,13 +46,13 @@ describe('Main tests', () => {
                 expect(r.constructor.name).toBe('IncomingMessage');
             },
             onBeforeSave: (r) => {
-                return r.split(".")[0]+"2" + ".jpeg"
+                return r.split(".")[0] + "2" + ".jpeg"
             }
         })
         const { downloadStatus, filePath } = await downloader.download();
         expect(downloadStatus).toBe('COMPLETE')
         expect(filePath).toBe('./downloads/buba2.jpeg')
-        await verifyFile(filePath, 2339 );
+        await verifyFile(filePath, 2339);
     })
 
     it('Should download a picture and use content-type', async () => {
@@ -81,7 +84,7 @@ describe('Main tests', () => {
         await verifyFile('./downloads/contentType1.jpeg', 23642);
     })
 
-  
+
 
     it('Should get the deduced name', async () => {
         let deducedName;
@@ -212,6 +215,49 @@ describe('Main tests', () => {
         }
         expect(error).toBe(true);
     })
+
+    it('Should skip file saving based on skipexisting flag, despite usage of onBeforeSave', async () => {
+        rimraf.sync("./downloads");
+        const host = randomHost()
+        let timesSaved = 0;
+        nock(`http://www.${host}.com`)
+            .get('/contentType')
+            .reply(200, (uri, requestBody) => {              
+                return fs.createReadStream(Path.join(__dirname, 'fixtures/Desert.jpg'))
+            }, {
+                'Content-Type': 'image/jpeg',
+                'Content-Length': '23642'
+            }).persist()
+        const downloader = new Downloader({
+            url: `http://www.${host}.com/contentType`,
+            directory: "./downloads",
+            onBeforeSave: (deducedName) => {
+                timesSaved++
+                return deducedName;
+            }
+        })
+
+        const downloader2 = new Downloader({
+            url: `http://www.${host}.com/contentType`,
+            directory: "./downloads",
+            skipExistingFileName: true,
+            onBeforeSave: (deducedName) => {
+                timesSaved++//The hook should not be called because skipExistingFileName is true
+                const fileExt = Path.extname(deducedName);
+                if (fileExt) return `${"aaa"}-${"bbb"}${fileExt}`;
+                return deducedName;
+              }
+        })
+
+        var { downloadStatus, filePath } = await downloader.download();
+        expect(downloadStatus).toBe('COMPLETE')
+        expect(filePath).toBe('./downloads/contentType.jpeg')
+        var { downloadStatus, filePath } = await downloader2.download();
+        expect(downloadStatus).toBe('ABORTED')
+        expect(filePath).toBe(null)
+        await verifyFile('./downloads/contentType.jpeg', 23642);
+        expect(timesSaved).toBe(1);
+    });
 
     it('Should download a file, without a known fileName, and skip the second one', async () => {
         rimraf.sync('./downloads')
