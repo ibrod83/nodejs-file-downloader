@@ -50,6 +50,7 @@ module.exports = class Downloader {
    * 
    * @param {object} config 
    * @param {string} config.url 
+   * @param {string} [config.method= 'GET']
    * @param {string} [config.directory]    
    * @param {string} [config.fileName = undefined] 
    * @param {boolean} [config.cloneFiles=true] true will create a duplicate. false will overwrite the existing file. 
@@ -89,7 +90,8 @@ module.exports = class Downloader {
       onResponse: undefined,
       onBeforeSave: undefined,
       onError: undefined,
-      onProgress: undefined
+      onProgress: undefined,
+      method: 'GET',
     }
 
     this.config = {
@@ -120,11 +122,11 @@ module.exports = class Downloader {
    */
   async download() {
     const that = this;
-    const { url, directory, fileName, cloneFiles, skipExistingFileName, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode } = that.config;
+    const { url, method, directory, fileName, cloneFiles, skipExistingFileName, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode } = that.config;
 
     //Repeat downloading process until success    
     const {filePath,downloadStatus} = await that._makeUntilSuccessful(async () => {
-      const download = new Download({ url, directory, fileName, cloneFiles, skipExistingFileName, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode });
+      const download = new Download({ url, method, directory, fileName, cloneFiles, skipExistingFileName, timeout, headers, httpsAgent, proxy, onResponse, onBeforeSave, onProgress, shouldBufferResponse, useSynchronousMode });
       this._currentDownload = download
 
       return await download.start();

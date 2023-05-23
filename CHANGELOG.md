@@ -1,3 +1,8 @@
+## 4.12.0 23/05/2023
+
+### Added
+- Added "method" option to config
+
 ## 4.11.1 16/04/2023
 
 ### Fixed

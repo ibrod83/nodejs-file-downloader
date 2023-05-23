@@ -28,6 +28,7 @@ module.exports = class Download {
    * 
    * @param {object} config 
    * @param {string} config.url 
+   * @param {string} [config.method = 'GET']
    * @param {string} [config.directory]    
    * @param {string} [config.fileName = undefined] 
    * @param {boolean } [config.cloneFiles=true] 
@@ -57,7 +58,8 @@ module.exports = class Download {
             shouldBufferResponse: false,
             onResponse: undefined,
             onBeforeSave: undefined,
-            onProgress: undefined
+            onProgress: undefined,
+            method: 'GET',
         }
 
         this.config = {
@@ -292,10 +294,11 @@ module.exports = class Download {
      * @return {Promise<{dataStream:stream.Readable,originalResponse:IncomingMessage}}  
      */
     async _makeRequest() {
-        const { timeout, headers, proxy, url, httpsAgent } = this.config;
+        const { timeout, headers, proxy, url, httpsAgent,method } = this.config;
         const options = {
             timeout,
-            headers
+            headers,
+            method
         }
         if (httpsAgent) {
             options.agent = httpsAgent;

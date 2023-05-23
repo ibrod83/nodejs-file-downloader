@@ -12,8 +12,29 @@ describe('Main tests', () => {
         done();
     })
 
-   
+    it('Should download a file using POST method', async () => {
+        const host = randomHost()
+        nock(`http://www.${host}.com`)
+            .post('/post')
+            .reply(200, (uri, requestBody) => {
+                return fs.createReadStream(Path.join(__dirname, 'fixtures/Desert.jpg'))
+            },{
+                'Content-Type': 'image/jpeg',
+                'Content-Length': '23642'
+            })
+        const downloader = new Downloader({
+            url: `http://www.${host}.com/post`,
+            directory: "./downloads",
+            method: 'POST'
+           
+        })
+        const { downloadStatus, filePath } = await downloader.download();
+        expect(downloadStatus).toBe('COMPLETE')
+        expect(filePath).toBe('./downloads/post.jpeg')
+        await verifyFile('./downloads/post.jpeg', 23642);
 
+   
+    })
 
     it('Should download a picture from data URI', async () => {
 
@@ -826,12 +847,3 @@ function verifyFile(path, size) {
 
 }
 
-function doesFileExist(path) {
-    return new Promise((resolve, reject) => {
-        fs.readFile(path, (err, data) => {
-            if (err)
-                return resolve(false);
-            resolve(true);
-        });
-    })
-}
