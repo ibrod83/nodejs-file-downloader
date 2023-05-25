@@ -42,8 +42,7 @@ const Downloader = require("nodejs-file-downloader");
 
   const downloader = new Downloader({
     url: "http://212.183.159.230/200MB.zip", //If the file name already exists, a new file with the name 200MB1.zip is created.
-    directory: "./downloads", //This folder will be created, if it doesn't exist.
-    method: "GET"// "GET" is the default, no need to specify unless you want to use a different method.
+    directory: "./downloads", //This folder will be created, if it doesn't exist.   
   });
   try {
     const {filePath,downloadStatus} = await downloader.download(); //Downloader.download() resolves with some useful properties.
