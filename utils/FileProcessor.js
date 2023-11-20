@@ -35,7 +35,7 @@ class FileProcessor {
     }
 
     pathExistsSync(path) {
-        return fs.existsSync(path);
+        return fs.existsSync(path) || fs.existsSync(path + ".download");
     }
 
 
@@ -44,14 +44,14 @@ class FileProcessor {
             return this.pathExistsSync(path);
         }
 
-        return new Promise((resolve, reject) => {
-            fs.access(path, (err) => {
-                if (err) {
-                    resolve(false)
-                } else {
-                    resolve(true)
-                }
-            });
+        return new Promise(async (resolve, reject) => {
+            try {
+                await Promise.all([fs.promises.access(path), fs.promises.access(path + ".download")]);
+                resolve(true)
+            }
+            catch (e) {
+                resolve(false)
+            }
         })
     }
 
