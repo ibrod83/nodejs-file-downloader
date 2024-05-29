@@ -15,6 +15,7 @@ const { isDataUrl } = require('./utils/url');
 const unlink = util.promisify(fs.unlink)
 const rename = util.promisify(fs.rename)
 const { bufferToReadableStream, createWriteStream, createBufferFromResponseStream, pipeStreams, getStringFromStream } = require('./utils/stream');
+const path = require('path')
 
 
 const downloadStatusEnum = {
@@ -128,7 +129,7 @@ module.exports = class Download {
 
     async _shouldSkipRequest() {        
         if (this.config.fileName && this.config.skipExistingFileName) {
-            if (await exists(this.config.directory + '/' + this.config.fileName)) {
+            if (await exists(path.join(this.config.directory , this.config.fileName))) {
                 return true
             }
         }
@@ -222,7 +223,7 @@ module.exports = class Download {
      * @returns 
      */
     async _shouldSkipSaving(originalFileName) {
-        if (this.config.skipExistingFileName && await exists(this.config.directory + '/' + originalFileName)) {
+        if (this.config.skipExistingFileName && await exists(path.join(this.config.directory ,  originalFileName))) {
             return true;
         }
         return false;

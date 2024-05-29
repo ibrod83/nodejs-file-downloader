@@ -1,3 +1,12 @@
+## 4.12.2 29/05/2024
+
+### Fixed
+- Fixed vulnerabilities
+- Fixed file path handling
+
+### Added
+- Added export to TS types
+
 ## 4.12.0 23/05/2023
 
 ### Added

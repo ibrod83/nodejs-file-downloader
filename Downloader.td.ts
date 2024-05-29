@@ -2,7 +2,7 @@ import http from 'http';
 export default Downloader;
 
 
-interface DownloaderConfig{
+export interface DownloaderConfig{
     url:string
     directory?:string
     fileName?:string
@@ -23,7 +23,7 @@ interface DownloaderConfig{
 
 }
 
-interface DownloaderReport{
+export interface DownloaderReport{
     downloadStatus:"COMPLETE"|"ABORTED"
     filePath:string|null
 }
