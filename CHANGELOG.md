@@ -1,3 +1,8 @@
+## 4.13.0 07/06/2024
+
+### Added
+- Added named export for Downloader class
+
 ## 4.12.2 29/05/2024
 
 ### Fixed

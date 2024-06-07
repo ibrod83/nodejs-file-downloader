@@ -35,7 +35,7 @@ $ npm install nodejs-file-downloader
 Download a large file with default configuration
 
 ```javascript
-const Downloader = require("nodejs-file-downloader");
+const {Downloader} = require("nodejs-file-downloader");
 
 (async () => {
   //Wrapping the code with an async function, just for the sake of example.
@@ -63,7 +63,7 @@ const Downloader = require("nodejs-file-downloader");
 If the response headers contain information about the file size, onProgress hook can be used. If the file size cannot be determined, "percentage" and "remainingSize" arguments will be called with NaN.
 
 ```javascript
-const Downloader = require("nodejs-file-downloader");
+const {Downloader} = require("nodejs-file-downloader");
 
 (async () => {
   const downloader = new Downloader({

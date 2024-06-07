@@ -2,7 +2,7 @@ const expect = require('expect')
 const fs = require('fs');
 const Path = require('path');
 const rimraf = require('rimraf')
-const Downloader = require('./Downloader');
+const {Downloader} = require('./Downloader');
 const { Readable } = require('stream');
 const nock = require('nock')
 

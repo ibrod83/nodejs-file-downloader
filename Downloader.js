@@ -43,7 +43,7 @@ const validateConfig = (config) => {
 }
 
 
-module.exports = class Downloader {
+ class Downloader {
 
 
   /**
@@ -183,5 +183,9 @@ module.exports = class Downloader {
 
 
 }
+
+//Export Downloader as both default and a named export
+module.exports = Downloader
+module.exports.Downloader = Downloader
 
 

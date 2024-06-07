@@ -7,7 +7,7 @@ const { app, server } = require('./testServer');
 const fs = require('fs');
 const Path = require('path');
 const rimraf = require('rimraf')
-const Downloader = require('./Downloader');
+const {Downloader} = require('./Downloader');
 const { Readable } = require('stream');
 describe('timeout and cancellation tests', () => {
    
